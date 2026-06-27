@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
       })),
     ];
 
-    const modelId = requestedModel || MODELS[0].id;
+    const modelId = requestedModel || 'openai';
     
     // Improved time-sensitive and live search trigger logic
     const lastMessage = conversation[conversation.length - 1];
@@ -192,24 +192,52 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const chunk of hf.chatCompletionStream({
-            model: modelId,
-            messages: conversation,
-            max_tokens: 1024,
-            temperature: 0.7,
-          })) {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              controller.enqueue(encoder.encode(content));
+          const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: modelId,
+              messages: conversation,
+              temperature: 0.7,
+              stream: true
+            })
+          });
+          
+          if (!res.body) {
+            controller.close();
+            return;
+          }
+          
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                try {
+                  const data = JSON.parse(line.replace('data: ', ''));
+                  const content = data.choices[0]?.delta?.content;
+                  if (content) {
+                    controller.enqueue(encoder.encode(content));
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }
             }
           }
-        } catch (err: any) {
-          console.error("HF Inference Error:", err);
-          controller.enqueue(encoder.encode(`\\n\\n⚠️ **API Error:** ${err.message}`));
+        } catch (error) {
+          console.error('Streaming error:', error);
+          controller.enqueue(encoder.encode('\n\n[Error: Connection interrupted. Please try again.]'));
         } finally {
           controller.close();
         }
-      }
+      },
     });
 
     return createStreamResponse(stream);

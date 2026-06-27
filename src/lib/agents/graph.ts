@@ -6,26 +6,66 @@ import { HfInference } from "@huggingface/inference";
 export const GraphState = MessagesAnnotation;
 
 // 2. Define Models
-export const createModel = (token: string, modelName: string = "Qwen/Qwen2.5-Coder-7B-Instruct") => {
-  const hf = new HfInference(token);
+export const createModel = (token: string, modelName: string = "openai") => {
   return {
     invoke: async (messages: any[]) => {
-      const hfMessages = messages.map(m => ({
+      const formattedMessages = messages.map(m => ({
         role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
         content: m.content
       }));
-      const res = await hf.chatCompletion({ model: modelName, messages: hfMessages, max_tokens: 2048, temperature: 0.5 });
-      return new AIMessage({ content: res.choices[0].message.content || "" });
+      
+      const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: modelName,
+          messages: formattedMessages,
+          temperature: 0.5
+        })
+      });
+      
+      const data = await res.json();
+      return new AIMessage({ content: data.choices[0]?.message?.content || "" });
     },
     stream: async function* (messages: any[]) {
-      const hfMessages = messages.map(m => ({
+      const formattedMessages = messages.map(m => ({
         role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
         content: m.content
       }));
-      for await (const chunk of hf.chatCompletionStream({ model: modelName, messages: hfMessages, max_tokens: 2048, temperature: 0.5 })) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          yield new AIMessage({ content });
+      
+      const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: modelName,
+          messages: formattedMessages,
+          temperature: 0.5,
+          stream: true
+        })
+      });
+      
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\\n').filter(line => line.trim() !== '');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data = JSON.parse(line.replace('data: ', ''));
+              const content = data.choices[0]?.delta?.content;
+              if (content) {
+                yield new AIMessage({ content });
+              }
+            } catch (e) {
+              // ignore parse errors for partial chunks
+            }
+          }
         }
       }
     }
