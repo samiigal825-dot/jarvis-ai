@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { FormattedMessage } from './FormattedMessage';
 import { Message } from '../types';
-import { Copy, RefreshCw, Pencil, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { Copy, RefreshCw, Pencil, ThumbsUp, ThumbsDown, Check, Volume2, VolumeX } from 'lucide-react';
 
 interface ChatMessageProps {
   message: Message;
@@ -16,11 +16,30 @@ interface ChatMessageProps {
 export function ChatMessage({ message, isStreaming, onPreview, onRun, onRegenerate }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSpeak = () => {
+    if ('speechSynthesis' in window) {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      } else {
+        const textToSpeak = message.content.replace(/```[\s\S]*?```/g, "Code block omitted.");
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        setIsSpeaking(true);
+        window.speechSynthesis.speak(utterance);
+      }
+    } else {
+      alert("Text-to-speech is not supported in your browser.");
+    }
   };
 
   const fileUploadMatch = message.content.match(/^\[UPLOADED_FILE:\s*([^\]]+)\]/);
@@ -89,6 +108,11 @@ export function ChatMessage({ message, isStreaming, onPreview, onRun, onRegenera
         <button className="msg-action-btn" title="Copy" onClick={handleCopy}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
+        {!isUser && !isErrorMessage && !isFileMessage && (
+          <button className="msg-action-btn" title={isSpeaking ? "Stop Speaking" : "Read Aloud"} onClick={handleSpeak}>
+            {isSpeaking ? <VolumeX size={14} color="#ef4444" /> : <Volume2 size={14} />}
+          </button>
+        )}
         {!isUser && (
           <>
             <button className="msg-action-btn" title="Regenerate" onClick={onRegenerate}><RefreshCw size={14} /></button>

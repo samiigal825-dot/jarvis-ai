@@ -50,6 +50,42 @@ export function ChatInput({ input, setInput, onSubmit, onFileUploaded, isLoading
     }
   };
 
+  const handleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech Recognition is not supported in this browser. Try Chrome.');
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setInput(prev => prev + (prev ? ' ' : '') + '🎙️ Listening...');
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join('');
+      // remove the listening text and add the actual transcript
+      setInput(prev => prev.replace('🎙️ Listening...', '').trim() + (prev && !prev.endsWith('🎙️ Listening...') ? ' ' : '') + transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      setInput(prev => prev.replace('🎙️ Listening...', '').trim());
+      console.error('Speech recognition error', event.error);
+    };
+
+    recognition.onend = () => {
+      setInput(prev => prev.replace('🎙️ Listening...', '').trim());
+    };
+
+    recognition.start();
+  };
+
   return (
     <div className="input-area">
       <form className="input-form" onSubmit={onSubmit}>
@@ -59,6 +95,9 @@ export function ChatInput({ input, setInput, onSubmit, onFileUploaded, isLoading
             {isUploading ? <span className="spin">⏳</span> : <Paperclip size={18} />}
           </button>
         </div>
+        <button type="button" className="btn-icon" onClick={handleVoiceInput} disabled={isLoading || isUploading} title="Voice Input" style={{ padding: '0 8px', color: 'var(--text-secondary)' }}>
+          <Mic size={18} />
+        </button>
         <textarea
           ref={textareaRef}
           className="input-textarea"
