@@ -28,9 +28,10 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    const arrayBuffer = await imageBlob.arrayBuffer();
+    const blob = imageBlob as unknown as Blob;
+    const arrayBuffer = await blob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const base64Image = `data:${imageBlob.type};base64,${buffer.toString('base64')}`;
+    const base64Image = `data:${blob.type || 'image/jpeg'};base64,${buffer.toString('base64')}`;
 
     return NextResponse.json({ image: base64Image });
   } catch (err: any) {
