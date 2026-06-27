@@ -1,10 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,51 +16,41 @@ export async function POST(req: NextRequest) {
       cleanCode = code.replace(/```[\s\S]*?```/g, '').trim();
     }
 
-    // Create a temporary file to run the script
-    const tempDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), '.data');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    const tempFile = path.join(tempDir, `script_${Date.now()}.py`);
-    fs.writeFileSync(tempFile, cleanCode);
-
-    let stdout = '';
-    let stderr = '';
-    
     try {
-      // Run Python script
-      // Try 'python' first, then fallback to 'python3'
-      let cmd = `python "${tempFile}"`;
-      try {
-        const result = await execAsync(cmd, { timeout: 15000 });
-        stdout = result.stdout;
-        stderr = result.stderr;
-      } catch (err: any) {
-        // Fallback to python3
-        cmd = `python3 "${tempFile}"`;
-        const result = await execAsync(cmd, { timeout: 15000 });
-        stdout = result.stdout;
-        stderr = result.stderr;
-      }
-    } catch (err: any) {
-      stderr = err.message || String(err);
-      stdout = err.stdout || '';
-    } finally {
-      // Cleanup temp file
-      if (fs.existsSync(tempFile)) {
-        try {
-          fs.unlinkSync(tempFile);
-        } catch (_) {}
-      }
-    }
+      // Run Python script using Piston API for serverless compatibility
+      const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: 'python',
+          version: '3.10.0',
+          files: [{ name: 'main.py', content: cleanCode }]
+        })
+      });
 
-    return NextResponse.json({
-      success: true,
-      stdout,
-      stderr,
-      output: stdout + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
-    });
+      if (!res.ok) {
+        throw new Error('Failed to execute code on remote server.');
+      }
+
+      const data = await res.json();
+      
+      const stdout = data.run?.stdout || '';
+      const stderr = data.run?.stderr || '';
+      const output = data.run?.output || '';
+
+      return NextResponse.json({
+        success: true,
+        stdout,
+        stderr,
+        output: output + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
+      });
+    } catch (err: any) {
+      return NextResponse.json({ 
+        success: false, 
+        error: err.message, 
+        output: `[EXECUTION ERROR]:\n${err.message}` 
+      }, { status: 500 });
+    }
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
