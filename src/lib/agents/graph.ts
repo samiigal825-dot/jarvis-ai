@@ -130,11 +130,7 @@ const dataAgent = createAgentNode("Data", SYSTEM_PROMPTS.Data);
 const imageAgent = createAgentNode("Image", SYSTEM_PROMPTS.Image);
 
 const coordinatorAgent = async (state: typeof MessagesAnnotation.State, config: any) => {
-  const token = config?.configurable?.hfToken;
-  if (!token) throw new Error("HuggingFace API Key is required");
-
-  // Changed to openai to use Pollinations free tier
-  const model = createModel(token, "openai"); 
+  const model = createModel("openai"); 
   
   const messages = [
     new SystemMessage(SYSTEM_PROMPTS.Coordinator),

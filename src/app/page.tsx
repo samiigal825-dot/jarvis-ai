@@ -196,14 +196,26 @@ export default function App() {
               const cssFiles = Object.keys(newFiles).filter(f => f.endsWith('.css'));
               cssFiles.forEach(css => {
                 const regex = new RegExp(`<link\\s+[^>]*href=["'](?:.\\/)?${css.replace('.', '\\.')}["'][^>]*>`, 'i');
-                injectedHtml = injectedHtml.replace(regex, `<style>\n${newFiles[css]}\n</style>`);
+                if (regex.test(injectedHtml)) {
+                  injectedHtml = injectedHtml.replace(regex, `<style>\n${newFiles[css]}\n</style>`);
+                } else if (injectedHtml.includes('</head>')) {
+                  injectedHtml = injectedHtml.replace(/<\/head>/i, `<style>\n${newFiles[css]}\n</style>\n</head>`);
+                } else {
+                  injectedHtml = `<style>\n${newFiles[css]}\n</style>\n` + injectedHtml;
+                }
               });
               
               // Inject JS
               const jsFiles = Object.keys(newFiles).filter(f => f.endsWith('.js'));
               jsFiles.forEach(js => {
                 const regex = new RegExp(`<script\\s+[^>]*src=["'](?:.\\/)?${js.replace('.', '\\.')}["'][^>]*><\\/script>`, 'i');
-                injectedHtml = injectedHtml.replace(regex, `<script>\n${newFiles[js]}\n</script>`);
+                if (regex.test(injectedHtml)) {
+                  injectedHtml = injectedHtml.replace(regex, `<script>\n${newFiles[js]}\n</script>`);
+                } else if (injectedHtml.includes('</body>')) {
+                  injectedHtml = injectedHtml.replace(/<\/body>/i, `<script>\n${newFiles[js]}\n</script>\n</body>`);
+                } else {
+                  injectedHtml = injectedHtml + `\n<script>\n${newFiles[js]}\n</script>`;
+                }
               });
               
               setCanvasCode(injectedHtml);

@@ -125,13 +125,35 @@ export function FormattedMessage({ content, onPreview, onRun }: FormattedMessage
       
       if (part.type === 'code') {
         const isCopied = copiedCode === part.content;
+        
+        let previewCode = part.content;
+        if (part.language === 'html') {
+          const cssBlocks = finalParts.filter(p => p.type === 'code' && p.language === 'css').map(p => p.content);
+          const jsBlocks = finalParts.filter(p => p.type === 'code' && (p.language === 'javascript' || p.language === 'js' || p.language === 'javascript' || p.language === 'ts' || p.language === 'typescript')).map(p => p.content);
+          
+          if (cssBlocks.length > 0 && !previewCode.includes('<style>')) {
+            if (previewCode.includes('</head>')) {
+              previewCode = previewCode.replace(/<\/head>/i, `<style>\n${cssBlocks.join('\n')}\n</style>\n</head>`);
+            } else {
+              previewCode = `<style>\n${cssBlocks.join('\n')}\n</style>\n` + previewCode;
+            }
+          }
+          if (jsBlocks.length > 0 && !previewCode.includes('<script>')) {
+            if (previewCode.includes('</body>')) {
+              previewCode = previewCode.replace(/<\/body>/i, `<script>\n${jsBlocks.join('\n')}\n</script>\n</body>`);
+            } else {
+              previewCode = previewCode + `\n<script>\n${jsBlocks.join('\n')}\n</script>`;
+            }
+          }
+        }
+
         return (
           <div key={index} className="code-block">
             <div className="code-header">
               <span>{part.language || 'text'}</span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {onPreview && (part.language === 'html' || part.language === 'javascript' || part.language === 'js') && (
-                  <button className="code-copy-btn" onClick={() => onPreview(part.content)}>
+                  <button className="code-copy-btn" onClick={() => onPreview(previewCode)}>
                     ▶ Preview
                   </button>
                 )}
