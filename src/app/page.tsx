@@ -7,7 +7,10 @@ import { ChatInput } from '@/components/ChatInput';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { SettingsModal } from '@/components/SettingsModal';
 import { Message, Conversation, Settings } from '@/types';
-import { Menu, Moon, Sun, Bot } from 'lucide-react';
+import { Menu, Moon, Sun, Bot, Activity, Code, Database } from 'lucide-react';
+import { SwarmVisualizer } from '@/components/SwarmVisualizer';
+import { IdeWorkspace } from '@/components/IdeWorkspace';
+import { DataStudio } from '@/components/DataStudio';
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -23,6 +26,14 @@ export default function App() {
     theme: 'dark',
     defaultModel: 'meta-llama/Meta-Llama-3-8B-Instruct',
   });
+
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data'>('swarm');
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [activeAgent, setActiveAgent] = useState('None');
+  const [ideCode, setIdeCode] = useState('print("Hello from JARVIS CEO!")');
+  const [ideOutput, setIdeOutput] = useState('');
+  const [isIdeRunning, setIsIdeRunning] = useState(false);
+  const [chartData, setChartData] = useState<any>(null);
 
   useEffect(() => {
     const localSettings = localStorage.getItem('jarvis_settings');
@@ -186,12 +197,15 @@ export default function App() {
       // Check for Python Code Execution Tool
       const pythonMatch = fullContent.match(/\[RUN_PYTHON\]([\s\S]*?)\[\/RUN_PYTHON\]/);
       if (pythonMatch && pythonMatch[1]) {
-        const rawCode = pythonMatch[1].trim();
+        setIdeCode(rawCode);
+        setActiveWorkspaceTab('ide');
+        setIsWorkspaceOpen(true);
         setMessages(prev => [
           ...prev, 
-          { id: Date.now().toString(), role: 'system', content: `💻 Executing Python script autonomously...`, timestamp: Date.now() }
+          { id: Date.now().toString(), role: 'system', content: `💻 Executing Python script autonomously in Workspace...`, timestamp: Date.now() }
         ]);
         
+        setIsIdeRunning(true);
         const runRes = await fetch('/api/run-python', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -199,6 +213,8 @@ export default function App() {
         });
         const runData = await runRes.json();
         const runOutput = runData.output || runData.error || 'No output.';
+        setIdeOutput(runOutput);
+        setIsIdeRunning(false);
         
         setIsLoading(false);
         await handleSend(
@@ -215,6 +231,10 @@ export default function App() {
         const role = subagentMatch[1].trim();
         const task = subagentMatch[2].trim();
         
+        setActiveAgent(role);
+        setActiveWorkspaceTab('swarm');
+        setIsWorkspaceOpen(true);
+        
         setMessages(prev => [
           ...prev, 
           { id: Date.now().toString(), role: 'system', content: `🤖 Delegating to Subagent '${role}' for: "${task.slice(0, 50)}..."`, timestamp: Date.now() }
@@ -230,14 +250,26 @@ export default function App() {
         const subOutput = subData.result || subData.error || 'No output.';
         
         setIsLoading(false);
+        setActiveAgent('JARVIS');
+        
+        // Render chart if data was output
+        const chartMatch = subOutput.match(/\[RENDER_CHART:\s*([\s\S]*?)\]/);
+        if (chartMatch && chartMatch[1]) {
+          try {
+            setChartData(JSON.parse(chartMatch[1]));
+            setActiveWorkspaceTab('data');
+          } catch(e) {}
+        }
+        
         await handleSend(
           undefined,
-          `[SYSTEM_TOOL_RESPONSE] Subagent '${role}' execution output:\n\`\`\`\n${subOutput}\n\`\`\`\n\nPlease analyze this result and continue your primary task.`,
+          `[SYSTEM_TOOL_RESPONSE] Subagent '${role}' execution output:\n\`\`\`\n${subOutput.replace(/\[RENDER_CHART:[\s\S]*?\]/, '')}\n\`\`\`\n\nPlease analyze this result and continue your primary task.`,
           [...newMessages, assistantMsg]
         );
         return;
       }
       
+      setActiveAgent('None');
       setConversations(prev => prev.map(c => 
         c.id === activeId ? { ...c, messages: [...newMessages, assistantMsg], updatedAt: Date.now() } : c
       ));
@@ -302,27 +334,31 @@ export default function App() {
         setIsOpen={setIsSidebarOpen}
       />
       
-      <main className="main">
-        <header className="chat-header">
-          <div className="chat-header-left">
-            <button className="btn-icon chat-header-menu" onClick={() => setIsSidebarOpen(true)}>
-              <Menu size={20} />
-            </button>
-            <div className="chat-header-model">
-              <span className="chat-header-model-icon">🤖</span>
-              <span className="chat-header-title">Jarvis CEO</span>
-              <span className="chat-header-badge">Autonomous Agent</span>
+      <div className="layout-container" style={{ display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
+        <main className="main" style={{ flex: isWorkspaceOpen ? '0 0 60%' : '1', borderRight: isWorkspaceOpen ? '1px solid var(--border)' : 'none', transition: 'flex 0.3s' }}>
+          <header className="chat-header">
+            <div className="chat-header-left">
+              <button className="btn-icon chat-header-menu" onClick={() => setIsSidebarOpen(true)}>
+                <Menu size={20} />
+              </button>
+              <div className="chat-header-model">
+                <span className="chat-header-model-icon">🤖</span>
+                <span className="chat-header-title">Jarvis CEO</span>
+                <span className="chat-header-badge">Autonomous Agent</span>
+              </div>
             </div>
-          </div>
-          <div className="chat-header-right">
-            <div className="chat-header-status">
-              <Bot size={14} /> Ready
+            <div className="chat-header-right">
+              <div className="chat-header-status">
+                <Bot size={14} /> Ready
+              </div>
+              <button className="btn-icon" onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)} title="Toggle Workspace">
+                <Activity size={18} />
+              </button>
+              <button className="btn-icon" onClick={() => setSettings({ ...settings, theme: settings.theme === 'dark' ? 'light' : 'dark' })}>
+                {settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
             </div>
-            <button className="btn-icon" onClick={() => setSettings({ ...settings, theme: settings.theme === 'dark' ? 'light' : 'dark' })}>
-              {settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-          </div>
-        </header>
+          </header>
 
         <div className="messages">
           {messages.length === 0 ? (
@@ -339,15 +375,43 @@ export default function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <ChatInput 
-          input={input} 
-          setInput={setInput} 
-          onSubmit={handleSend} 
-          onFileUploaded={handleFileUploaded}
-          isLoading={isLoading} 
-          onStop={handleStop} 
-        />
-      </main>
+          <ChatInput 
+            input={input} 
+            setInput={setInput} 
+            onSubmit={handleSend} 
+            onFileUploaded={handleFileUploaded}
+            isLoading={isLoading} 
+            onStop={handleStop} 
+          />
+        </main>
+        
+        {isWorkspaceOpen && (
+          <aside className="workspace-panel" style={{ flex: '1', display: 'flex', flexDirection: 'column', background: 'var(--surface-hover)' }}>
+            <div className="workspace-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+              <button className={`ws-tab ${activeWorkspaceTab === 'swarm' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('swarm')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'swarm' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'swarm' ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                <Activity size={16} /> Swarm View
+              </button>
+              <button className={`ws-tab ${activeWorkspaceTab === 'ide' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('ide')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'ide' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'ide' ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                <Code size={16} /> IDE
+              </button>
+              <button className={`ws-tab ${activeWorkspaceTab === 'data' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('data')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'data' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'data' ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                <Database size={16} /> Data Studio
+              </button>
+            </div>
+            <div className="workspace-content" style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
+              {activeWorkspaceTab === 'swarm' && <SwarmVisualizer activeAgent={activeAgent} />}
+              {activeWorkspaceTab === 'ide' && <IdeWorkspace code={ideCode} onRun={async (c) => { 
+                setIsIdeRunning(true);
+                const r = await fetch('/api/run-python', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code: c }) });
+                const d = await r.json();
+                setIdeOutput(d.output || d.error);
+                setIsIdeRunning(false);
+              }} output={ideOutput} isExecuting={isIdeRunning} />}
+              {activeWorkspaceTab === 'data' && <DataStudio chartData={chartData} />}
+            </div>
+          </aside>
+        )}
+      </div>
 
       <SettingsModal 
         isOpen={isSettingsOpen} 
