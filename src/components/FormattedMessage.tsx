@@ -140,9 +140,9 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
 
 function formatText(text: string) {
   let html = text
-    .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
-    .replace(/\\*(.*?)\\*/g, '<em>$1</em>')
-    .replace(/\`([^`]+)\`/g, '<code>$1</code>')
-    .replace(/\\n/g, '<br/>');
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br/>');
   return html;
 }
