@@ -10,9 +10,10 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   onPreview?: (code: string) => void;
   onRun?: (code: string) => void;
+  onRegenerate?: () => void;
 }
 
-export function ChatMessage({ message, isStreaming, onPreview, onRun }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onPreview, onRun, onRegenerate }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -90,7 +91,7 @@ export function ChatMessage({ message, isStreaming, onPreview, onRun }: ChatMess
         </button>
         {!isUser && (
           <>
-            <button className="msg-action-btn" title="Regenerate"><RefreshCw size={14} /></button>
+            <button className="msg-action-btn" title="Regenerate" onClick={onRegenerate}><RefreshCw size={14} /></button>
             <button className="msg-action-btn" title="Good Response"><ThumbsUp size={14} /></button>
             <button className="msg-action-btn" title="Bad Response"><ThumbsDown size={14} /></button>
           </>

@@ -394,6 +394,15 @@ export default function App() {
     }
   };
 
+  const handleRegenerate = (msgIndex: number) => {
+    if (msgIndex <= 0 || isLoading) return;
+    const previousUserMsg = messages[msgIndex - 1];
+    if (previousUserMsg.role !== 'user') return;
+    
+    const historyBeforeUserMsg = messages.slice(0, msgIndex - 1);
+    handleSend(undefined, previousUserMsg.content, historyBeforeUserMsg);
+  };
+
   const handleFileUploaded = (fileName: string, extractedData: string) => {
     const fileMsg: Message = {
       id: Date.now().toString(),
@@ -484,6 +493,7 @@ export default function App() {
                   setActiveWorkspaceTab('ide');
                   setIsWorkspaceOpen(true);
                 }}
+                onRegenerate={() => handleRegenerate(idx)}
               />
             ))
           )}

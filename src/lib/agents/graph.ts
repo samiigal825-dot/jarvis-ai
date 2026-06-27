@@ -25,6 +25,9 @@ export const createModel = (token: string, modelName: string = "openai") => {
       });
       
       const data = await res.json();
+      if (!data || !data.choices || !data.choices[0]) {
+        return new AIMessage({ content: `[API Error] ${JSON.stringify(data)}` });
+      }
       return new AIMessage({ content: data.choices[0]?.message?.content || "" });
     },
     stream: async function* (messages: any[]) {
@@ -58,9 +61,11 @@ export const createModel = (token: string, modelName: string = "openai") => {
           if (line.startsWith('data: ') && line !== 'data: [DONE]') {
             try {
               const data = JSON.parse(line.replace('data: ', ''));
-              const content = data.choices[0]?.delta?.content;
-              if (content) {
-                yield new AIMessage({ content });
+              if (data && data.choices && data.choices[0]) {
+                const content = data.choices[0]?.delta?.content;
+                if (content) {
+                  yield new AIMessage({ content });
+                }
               }
             } catch (e) {
               // ignore parse errors for partial chunks
@@ -128,8 +133,11 @@ const dataAgent = createAgentNode("Data", SYSTEM_PROMPTS.Data);
 const imageAgent = createAgentNode("Image", SYSTEM_PROMPTS.Image);
 
 const coordinatorAgent = async (state: typeof MessagesAnnotation.State, config: any) => {
-  const token = config?.configurable?.hfToken || process.env.HUGGINGFACE_API_KEY || '';
-  const model = createModel(token, "Qwen/Qwen2.5-Coder-32B-Instruct"); 
+  const token = config?.configurable?.hfToken;
+  if (!token) throw new Error("HuggingFace API Key is required");
+
+  // Changed to openai to use Pollinations free tier
+  const model = createModel(token, "openai"); 
   
   const messages = [
     new SystemMessage(SYSTEM_PROMPTS.Coordinator),

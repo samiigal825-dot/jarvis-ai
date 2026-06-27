@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
     });
     
     const data = await res.json();
+    if (!data || !data.choices || !data.choices[0]) {
+      return NextResponse.json({ error: "Failed to generate response: " + JSON.stringify(data) }, { status: 500 });
+    }
     const resultText = data.choices[0]?.message?.content || "";
 
     return NextResponse.json({ 
