@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const hf = new HfInference(HF_TOKEN);
     // Use a reliable model for all subagents to avoid unsupported model errors on HF API
-    const modelId = 'meta-llama/Llama-3.3-70B-Instruct';
+    const modelId = 'meta-llama/Llama-3.1-8B-Instruct';
 
     let roleInstructions = "Perform the task thoroughly, analyze data if provided, and return a comprehensive summary of your findings or code.";
     if (role.toLowerCase() === 'manager') {

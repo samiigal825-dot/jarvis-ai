@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 import { HfInference } from '@huggingface/inference';
 
 const MODELS = [
-  { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B (Pro)', icon: '🧠' },
-  { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder', icon: '💻' },
+  { id: 'meta-llama/Llama-3.1-8B-Instruct', name: 'Llama 3.1 8B', icon: '🧠' },
+  { id: 'Qwen/Qwen2.5-Coder-7B-Instruct', name: 'Qwen 2.5 Coder 7B', icon: '💻' },
   { id: 'mistralai/Mistral-Nemo-Instruct-2407', name: 'Mistral Nemo', icon: '🌪️' },
 ];
 

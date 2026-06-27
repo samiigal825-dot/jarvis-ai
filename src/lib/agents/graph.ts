@@ -6,7 +6,7 @@ import { HfInference } from "@huggingface/inference";
 export const GraphState = MessagesAnnotation;
 
 // 2. Define Models
-export const createModel = (token: string, modelName: string = "Qwen/Qwen2.5-Coder-32B-Instruct") => {
+export const createModel = (token: string, modelName: string = "Qwen/Qwen2.5-Coder-7B-Instruct") => {
   const hf = new HfInference(token);
   return {
     invoke: async (messages: any[]) => {
