@@ -197,6 +197,7 @@ export default function App() {
       // Check for Python Code Execution Tool
       const pythonMatch = fullContent.match(/\[RUN_PYTHON\]([\s\S]*?)\[\/RUN_PYTHON\]/);
       if (pythonMatch && pythonMatch[1]) {
+        const rawCode = pythonMatch[1].trim();
         setIdeCode(rawCode);
         setActiveWorkspaceTab('ide');
         setIsWorkspaceOpen(true);
