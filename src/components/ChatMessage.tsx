@@ -24,6 +24,8 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
   const isFileMessage = !!fileUploadMatch;
   const fileName = fileUploadMatch ? fileUploadMatch[1] : '';
 
+  const isErrorMessage = message.content.includes('⚠️');
+
   return (
     <div className={`msg ${isUser ? 'msg-user' : 'msg-assistant'}`}>
       <div className="msg-header">
@@ -31,7 +33,27 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
         <span className="msg-sender">{isUser ? 'You' : 'Jarvis'}</span>
       </div>
       <div className="msg-bubble">
-        {isFileMessage ? (
+        {isErrorMessage ? (
+          <div className="error-alert-card" style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            padding: '14px 18px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '12px',
+            margin: '6px 0',
+            maxWidth: '550px'
+          }}>
+            <span style={{ fontSize: '1.4rem', filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.4))' }}>⚠️</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#ef4444' }}>System Connection Error</span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                {message.content.replace(/[⚠️\s*#]+/g, '').replace(/API Error: /i, '').replace(/System Error: /i, '')}
+              </span>
+            </div>
+          </div>
+        ) : isFileMessage ? (
           <div className="file-upload-card" style={{
             display: 'flex',
             alignItems: 'center',

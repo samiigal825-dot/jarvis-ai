@@ -21,15 +21,74 @@ export default function App() {
   const [settings, setSettings] = useState<Settings>({
     hfToken: '',
     theme: 'dark',
-    defaultModel: 'Qwen/Qwen2.5-72B-Instruct',
+    defaultModel: 'meta-llama/Meta-Llama-3-8B-Instruct',
   });
+
+  useEffect(() => {
+    const localSettings = localStorage.getItem('jarvis_settings');
+    if (localSettings) {
+      try {
+        setSettings(JSON.parse(localSettings));
+      } catch (_) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('jarvis_settings', JSON.stringify(settings));
+    // Set theme class on document body
+    if (settings.theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+  }, [settings]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const localConvs = localStorage.getItem('jarvis_conversations');
+    const localCurrentId = localStorage.getItem('jarvis_current_id');
+    if (localConvs) {
+      const parsed = JSON.parse(localConvs);
+      setConversations(parsed);
+      if (localCurrentId) {
+        setCurrentId(localCurrentId);
+        const active = parsed.find((c: any) => c.id === localCurrentId);
+        if (active) setMessages(active.messages);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('jarvis_conversations', JSON.stringify(conversations));
+  }, [conversations]);
+
+  useEffect(() => {
+    if (currentId) {
+      localStorage.setItem('jarvis_current_id', currentId);
+    } else {
+      localStorage.removeItem('jarvis_current_id');
+    }
+  }, [currentId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-sync active conversation messages
+  useEffect(() => {
+    if (currentId && messages.length > 0) {
+      setConversations(prev => {
+        // Only update if messages actually changed to avoid infinite loop
+        const active = prev.find(c => c.id === currentId);
+        if (active && JSON.stringify(active.messages) !== JSON.stringify(messages)) {
+          return prev.map(c => c.id === currentId ? { ...c, messages, updatedAt: Date.now() } : c);
+        }
+        return prev;
+      });
+    }
+  }, [messages, currentId]);
 
   const handleNewChat = () => {
     setCurrentId(null);
@@ -100,7 +159,7 @@ export default function App() {
       }
 
       // Check for Autonomous Tool Calls
-      const searchMatch = fullContent.match(/\\[SEARCH:(.*?)\\]/);
+      const searchMatch = fullContent.match(/\[SEARCH:(.*?)\]/);
       if (searchMatch && searchMatch[1]) {
         const query = searchMatch[1].trim();
         // Append system message to UI to show we are searching
@@ -118,7 +177,33 @@ export default function App() {
         setIsLoading(false); // reset so we can call again
         await handleSend(
           undefined, 
-          `[SYSTEM_TOOL_RESPONSE] Search Results for "${query}":\\n${searchResultText}\\n\\nPlease continue your answer based on these results.`,
+          `[SYSTEM_TOOL_RESPONSE] Search Results for "${query}":\n${searchResultText}\n\nPlease continue your answer based on these results.`,
+          [...newMessages, assistantMsg]
+        );
+        return;
+      }
+
+      // Check for Python Code Execution Tool
+      const pythonMatch = fullContent.match(/\[RUN_PYTHON\]([\s\S]*?)\[\/RUN_PYTHON\]/);
+      if (pythonMatch && pythonMatch[1]) {
+        const rawCode = pythonMatch[1].trim();
+        setMessages(prev => [
+          ...prev, 
+          { id: Date.now().toString(), role: 'system', content: `💻 Executing Python script autonomously...`, timestamp: Date.now() }
+        ]);
+        
+        const runRes = await fetch('/api/run-python', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: rawCode })
+        });
+        const runData = await runRes.json();
+        const runOutput = runData.output || runData.error || 'No output.';
+        
+        setIsLoading(false);
+        await handleSend(
+          undefined,
+          `[SYSTEM_TOOL_RESPONSE] Python Execution Output:\n\`\`\`\n${runOutput}\n\`\`\`\n\nPlease analyze this output, explain it, and continue your task.`,
           [...newMessages, assistantMsg]
         );
         return;
