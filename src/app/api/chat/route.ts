@@ -85,20 +85,20 @@ export async function POST(req: NextRequest) {
     let conversation = [
       { role: 'system', content: DYNAMIC_SYSTEM },
       ...messages.map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
+        role: (m.role === 'system' || m.role === 'user' || m.role === 'assistant') ? m.role : (m.role === 'user' ? 'user' : 'assistant'),
         content: m.content || '',
       })),
     ];
 
     const modelId = requestedModel || MODELS[0].id;
     
-    // Improved time-sensitive and live search trigger logic (supporting Roman Urdu & English)
+    // Improved time-sensitive and live search trigger logic
     const lastMsg = conversation[conversation.length - 1].content.toLowerCase();
-    const liveKeywords = ['search', 'latest', 'news', 'current', 'weather', 'mausam', 'score', 'match', 'today', 'aaj', 'aj', 'live', 'halat'];
+    const liveKeywords = ['search', 'latest', 'news', 'current', 'weather', 'mausam', 'score', 'match', 'today', 'aaj', 'aj', 'live', 'halat', 'date'];
     if (liveKeywords.some(keyword => lastMsg.includes(keyword))) {
       conversation.push({ 
         role: 'system', 
-        content: `ALERT: The user is asking about live or current events. Today's date is ${currentDate}. If you need live info (like weather, scores, or news), you MUST output: [SEARCH: search query] now.` 
+        content: `ALERT: The user is asking about live or current events (e.g. today's date). Today's date is ${currentDate}, Time is ${localTime}. Answer directly based on this.` 
       });
     }
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
           for await (const chunk of hf.chatCompletionStream({
             model: modelId,
             messages: conversation,
-            max_tokens: 4096,
+            max_tokens: 1024,
             temperature: 0.7,
           })) {
             const content = chunk.choices[0]?.delta?.content;

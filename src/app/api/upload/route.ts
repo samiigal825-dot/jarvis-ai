@@ -25,8 +25,6 @@ export async function POST(req: NextRequest) {
     if (safeName.endsWith('.xlsx') || safeName.endsWith('.csv') || safeName.endsWith('.xls')) {
       const workbook = xlsx.read(buffer, { type: 'buffer' });
       extractedText = xlsx.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
-    } else if (safeName.endsWith('.txt') || safeName.endsWith('.json') || safeName.endsWith('.md')) {
-      extractedText = buffer.toString('utf-8');
     } else if (file.type.startsWith('image/')) {
       // AI Vision implementation using Salesforce/blip-image-captioning-large
       try {
@@ -53,6 +51,9 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         extractedText = `[IMAGE VISION ANALYSIS]\nAn image named "${safeName}" was uploaded, but the Vision engine encountered an error.`;
       }
+    } else {
+      // Fallback for HTML, JS, Python, TXT, JSON, MD, etc.
+      extractedText = buffer.toString('utf-8');
     }
 
     return NextResponse.json({
