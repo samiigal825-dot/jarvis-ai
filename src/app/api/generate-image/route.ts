@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     const hf = new HfInference(HF_TOKEN);
-    // Using a fast, high-quality image generation model
-    const modelId = 'black-forest-labs/FLUX.1-schnell';
+    // Using a fast, high-quality image generation model supported by HF serverless
+    const modelId = 'stabilityai/stable-diffusion-xl-base-1.0';
 
     const imageBlob = await hf.textToImage({
       model: modelId,
