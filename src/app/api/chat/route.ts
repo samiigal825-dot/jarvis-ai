@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 
 // ─── HuggingFace Models ───
 const MODELS = [
-  { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 72B', icon: '🧠' },
-  { id: 'meta-llama/Llama-3.2-3B-Instruct', name: 'Llama 3.2', icon: '🦙' },
+  { id: 'meta-llama/Meta-Llama-3-8B-Instruct', name: 'Llama 3 8B', icon: '🦙' },
+  { id: 'mistralai/Mistral-Nemo-Instruct-2407', name: 'Mistral Nemo', icon: '🌪️' },
   { id: 'microsoft/Phi-3.5-mini-instruct', name: 'Phi 3.5', icon: '⚡' },
 ];
 
