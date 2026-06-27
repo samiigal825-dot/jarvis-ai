@@ -17,8 +17,13 @@ export async function POST(req: NextRequest) {
     }
 
     const hf = new HfInference(HF_TOKEN);
-    // Using an intelligent model for the subagent
-    const modelId = 'meta-llama/Llama-3.3-70B-Instruct';
+    // Select specialized models based on the subagent role
+    let modelId = 'meta-llama/Llama-3.3-70B-Instruct';
+    if (role.toLowerCase() === 'manager') {
+      modelId = 'Qwen/QwQ-32B-Preview'; // Specialized reasoning/thinking model
+    } else if (role.toLowerCase() === 'coder') {
+      modelId = 'Qwen/Qwen2.5-Coder-32B-Instruct'; // Specialized coding model
+    }
 
     let roleInstructions = "Perform the task thoroughly, analyze data if provided, and return a comprehensive summary of your findings or code.";
     if (role.toLowerCase() === 'manager') {

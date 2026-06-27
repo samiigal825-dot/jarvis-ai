@@ -36,8 +36,8 @@ export function FormattedMessage({ content, onPreview, onRun }: FormattedMessage
     const parts: Part[] = [];
     let currentText = '';
     
-    // Check for <thinking>...</thinking>
-    const thinkingRegex = /<thinking>([\s\S]*?)(?:<\/thinking>|$)/g;
+    // Check for <thinking>...</thinking> or <think>...</think>
+    const thinkingRegex = /<(?:thinking|think)>([\s\S]*?)(?:<\/(?:thinking|think)>|$)/g;
     
     let lastIndex = 0;
     let match;
@@ -113,7 +113,7 @@ export function FormattedMessage({ content, onPreview, onRun }: FormattedMessage
       
       if (part.type === 'thinking') {
         return (
-          <details key={index} className="thinking-block" open={false}>
+          <details key={index} className="thinking-block" open>
             <summary className="thinking-header">
               <span className="thinking-icon">🧠</span>
               <span className="thinking-title">Agentic Reasoning Process</span>
