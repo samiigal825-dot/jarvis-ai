@@ -1,80 +1,21 @@
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
 import { AIMessage, SystemMessage } from "@langchain/core/messages";
-import { HfInference } from "@huggingface/inference";
+import { ChatOpenAI } from "@langchain/openai";
 
 // 1. Define State
 export const GraphState = MessagesAnnotation;
 
 // 2. Define Models
 export const createModel = (modelName: string = "openai") => {
-  return {
-    invoke: async (messages: any[]) => {
-      const formattedMessages = messages.map(m => ({
-        role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
-        content: m.content
-      }));
-      
-      const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: modelName,
-          messages: formattedMessages,
-          temperature: 0.5
-        })
-      });
-      
-      const data = await res.json();
-      if (!data || !data.choices || !data.choices[0]) {
-        return new AIMessage({ content: `[API Error] ${JSON.stringify(data)}` });
-      }
-      return new AIMessage({ content: data.choices[0]?.message?.content || "" });
-    },
-    stream: async function* (messages: any[]) {
-      const formattedMessages = messages.map(m => ({
-        role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
-        content: m.content
-      }));
-      
-      const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: modelName,
-          messages: formattedMessages,
-          temperature: 0.5,
-          stream: true
-        })
-      });
-      
-      if (!res.body) return;
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const data = JSON.parse(line.replace('data: ', ''));
-              if (data && data.choices && data.choices[0]) {
-                const content = data.choices[0]?.delta?.content;
-                if (content) {
-                  yield new AIMessage({ content });
-                }
-              }
-            } catch (e) {
-              // ignore parse errors for partial chunks
-            }
-          }
-        }
-      }
+  return new ChatOpenAI({
+    modelName: modelName,
+    apiKey: "dummy-key",
+    temperature: 0.5,
+    maxTokens: 4000,
+    configuration: {
+      baseURL: "https://text.pollinations.ai/openai/"
     }
-  };
+  });
 };
 
 // 3. Define Nodes (Agents)

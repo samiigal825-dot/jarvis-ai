@@ -213,8 +213,8 @@ export async function POST(req: NextRequest) {
               if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                 try {
                   const data = JSON.parse(line.replace('data: ', ''));
-                  if (data && data.choices && data.choices[0]) {
-                    const content = data.choices[0]?.delta?.content;
+                  if (data && data.choices && data.choices?.[0]) {
+                    const content = data.choices?.[0]?.delta?.content;
                     if (content) {
                       controller.enqueue(encoder.encode(content));
                     }
