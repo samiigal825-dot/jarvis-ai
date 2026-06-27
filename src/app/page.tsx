@@ -144,6 +144,28 @@ export default function App() {
     }
   };
 
+  const handleFileUploaded = (fileName: string, extractedData: string) => {
+    const fileMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: `[UPLOADED_FILE: ${fileName}]\n\nFile Content:\n\`\`\`\n${extractedData}\n\`\`\``,
+      timestamp: Date.now()
+    };
+    
+    setMessages(prev => [...prev, fileMsg]);
+
+    let activeId = currentId;
+    if (!activeId) {
+      activeId = Date.now().toString();
+      setCurrentId(activeId);
+      setConversations([{ id: activeId, title: `Uploaded ${fileName}`, messages: [fileMsg], updatedAt: Date.now() }, ...conversations]);
+    } else {
+      setConversations(prev => prev.map(c => 
+        c.id === activeId ? { ...c, messages: [...c.messages, fileMsg], updatedAt: Date.now() } : c
+      ));
+    }
+  };
+
   const handleStop = () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
@@ -207,6 +229,7 @@ export default function App() {
           input={input} 
           setInput={setInput} 
           onSubmit={handleSend} 
+          onFileUploaded={handleFileUploaded}
           isLoading={isLoading} 
           onStop={handleStop} 
         />

@@ -7,11 +7,12 @@ interface ChatInputProps {
   input: string;
   setInput: (val: string) => void;
   onSubmit: (e?: React.FormEvent, promptOverride?: string) => void;
+  onFileUploaded: (fileName: string, extractedData: string) => void;
   isLoading: boolean;
   onStop: () => void;
 }
 
-export function ChatInput({ input, setInput, onSubmit, isLoading, onStop }: ChatInputProps) {
+export function ChatInput({ input, setInput, onSubmit, onFileUploaded, isLoading, onStop }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -37,8 +38,7 @@ export function ChatInput({ input, setInput, onSubmit, isLoading, onStop }: Chat
       const data = await res.json();
       
       if (data.extractedData) {
-        const prompt = `I have uploaded a file named ${data.fileName}. Here is the extracted data:\\n\\n\`\`\`\\n${data.extractedData}\\n\`\`\`\\n\\nPlease analyze this data.`;
-        onSubmit(undefined, prompt);
+        onFileUploaded(data.fileName, data.extractedData);
       } else {
         alert('File uploaded but could not extract text.');
       }
