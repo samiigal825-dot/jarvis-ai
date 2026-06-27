@@ -22,23 +22,14 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          const events = jarvisGraph.streamEvents(
+          const events = await jarvisGraph.stream(
             { messages: lcMessages },
-            { version: "v1", configurable: { hfToken: token } }
+            { configurable: { hfToken: token }, streamMode: "messages" }
           );
 
-          for await (const event of events) {
-            if (event.event === "on_chat_model_stream") {
-              const chunk = event.data?.chunk?.content;
-              if (chunk) {
-                // Send raw chunk to client
-                controller.enqueue(encoder.encode(chunk));
-              }
-            } else if (event.event === "on_chain_end" && event.name === "coordinator") {
-              // Coordinator finished thinking
-            } else if (event.event === "on_chain_end" && ["research", "developer", "qa"].includes(event.name)) {
-              // Tell client that a subagent just finished a task
-              controller.enqueue(encoder.encode(`\n\n[SYSTEM_TOOL_RESPONSE] ${event.name.toUpperCase()} Agent finished task.\n`));
+          for await (const [message, _metadata] of events) {
+            if (message.content) {
+              controller.enqueue(encoder.encode(message.content));
             }
           }
         } catch (err: any) {

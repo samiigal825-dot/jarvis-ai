@@ -1,21 +1,35 @@
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
-import { ChatOpenAI } from "@langchain/openai";
 import { AIMessage, SystemMessage } from "@langchain/core/messages";
+import { HfInference } from "@huggingface/inference";
 
 // 1. Define State
 export const GraphState = MessagesAnnotation;
 
 // 2. Define Models
-export const createModel = (token: string, modelName: string = "meta-llama/Llama-3.3-70B-Instruct") => {
-  return new ChatOpenAI({
-    modelName: modelName,
-    apiKey: token || "dummy", // fallback to prevent initialization error if token is weird
-    configuration: {
-      baseURL: "https://api-inference.huggingface.co/v1/"
+export const createModel = (token: string, modelName: string = "Qwen/Qwen2.5-Coder-32B-Instruct") => {
+  const hf = new HfInference(token);
+  return {
+    invoke: async (messages: any[]) => {
+      const hfMessages = messages.map(m => ({
+        role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
+        content: m.content
+      }));
+      const res = await hf.chatCompletion({ model: modelName, messages: hfMessages, max_tokens: 2048, temperature: 0.5 });
+      return new AIMessage({ content: res.choices[0].message.content || "" });
     },
-    maxTokens: 2048,
-    temperature: 0.5,
-  });
+    stream: async function* (messages: any[]) {
+      const hfMessages = messages.map(m => ({
+        role: m.getType() === 'human' ? 'user' : (m.getType() === 'system' ? 'system' : 'assistant'),
+        content: m.content
+      }));
+      for await (const chunk of hf.chatCompletionStream({ model: modelName, messages: hfMessages, max_tokens: 2048, temperature: 0.5 })) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          yield new AIMessage({ content });
+        }
+      }
+    }
+  };
 };
 
 // 3. Define Nodes (Agents)
@@ -52,8 +66,8 @@ const dataAgent = createAgentNode("Data", SYSTEM_PROMPTS.Data);
 const imageAgent = createAgentNode("Image", SYSTEM_PROMPTS.Image);
 
 const coordinatorAgent = async (state: typeof MessagesAnnotation.State, config: any) => {
-  const token = config?.configurable?.hfToken || process.env.HUGGINGFACE_API_KEY;
-  const model = createModel(token, "meta-llama/Llama-3.3-70B-Instruct"); 
+  const token = config?.configurable?.hfToken || process.env.HUGGINGFACE_API_KEY || '';
+  const model = createModel(token, "Qwen/Qwen2.5-Coder-32B-Instruct"); 
   
   const messages = [
     new SystemMessage(SYSTEM_PROMPTS.Coordinator),
