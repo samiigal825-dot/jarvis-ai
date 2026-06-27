@@ -140,7 +140,7 @@ export default function App() {
     try {
       abortControllerRef.current = new AbortController();
       
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/langgraph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

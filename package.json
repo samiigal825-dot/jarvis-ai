@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.20",
+    "@langchain/community": "^1.1.29",
+    "@langchain/core": "^1.2.1",
+    "@langchain/langgraph": "^1.4.7",
+    "@langchain/openai": "^1.5.3",
     "@monaco-editor/react": "^4.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "@webcontainer/api": "^1.6.4",
