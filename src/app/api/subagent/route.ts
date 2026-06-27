@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HfInference } from '@huggingface/inference';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { role, task, hfToken } = await req.json();
-    const HF_TOKEN = hfToken || process.env.HUGGINGFACE_API_KEY || '';
-
-    if (!HF_TOKEN) {
-      return NextResponse.json({ error: "HuggingFace API Key is missing." }, { status: 500 });
-    }
+    const { role, task } = await req.json();
 
     if (!role || !task) {
       return NextResponse.json({ error: "Role and task are required." }, { status: 400 });
     }
 
-    const hf = new HfInference(HF_TOKEN);
-    // Use a reliable model for all subagents to avoid unsupported model errors on HF API
+    // Use Pollinations API model
     const modelId = 'openai';
 
     let roleInstructions = "Perform the task thoroughly, analyze data if provided, and return a comprehensive summary of your findings or code.";

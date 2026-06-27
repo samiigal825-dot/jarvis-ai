@@ -28,19 +28,28 @@ export async function POST(req: NextRequest) {
       
       return new Promise<NextResponse>((resolve) => {
         exec(`python "${filePath}"`, { timeout: 10000 }, (error: any, stdout: string, stderr: string) => {
-          // Clean up
-          try { fs.unlinkSync(filePath); } catch (e) {}
-          
-          if (error && !stderr) {
-            stderr = error.message;
+          if (error && error.message.includes('command not found')) {
+            // Try python3 if python is not found
+            exec(`python3 "${filePath}"`, { timeout: 10000 }, (err3: any, out3: string, errOut3: string) => {
+              try { fs.unlinkSync(filePath); } catch (e) {}
+              if (err3 && !errOut3) errOut3 = err3.message;
+              resolve(NextResponse.json({
+                success: !err3,
+                stdout: out3,
+                stderr: errOut3,
+                output: (out3 || '') + (errOut3 ? `\n\n[ERRORS / STDERR]:\n${errOut3}` : '')
+              }));
+            });
+          } else {
+            try { fs.unlinkSync(filePath); } catch (e) {}
+            if (error && !stderr) stderr = error.message;
+            resolve(NextResponse.json({
+              success: !error,
+              stdout,
+              stderr,
+              output: (stdout || '') + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
+            }));
           }
-          
-          resolve(NextResponse.json({
-            success: !error,
-            stdout,
-            stderr,
-            output: (stdout || '') + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
-          }));
         });
       });
     } catch (err: any) {
