@@ -6,7 +6,7 @@ import { HfInference } from "@huggingface/inference";
 export const GraphState = MessagesAnnotation;
 
 // 2. Define Models
-export const createModel = (token: string, modelName: string = "openai") => {
+export const createModel = (modelName: string = "openai") => {
   return {
     invoke: async (messages: any[]) => {
       const formattedMessages = messages.map(m => ({
@@ -55,7 +55,7 @@ export const createModel = (token: string, modelName: string = "openai") => {
         const { value, done } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\\n').filter(line => line.trim() !== '');
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
         
         for (const line of lines) {
           if (line.startsWith('data: ') && line !== 'data: [DONE]') {
@@ -80,10 +80,7 @@ export const createModel = (token: string, modelName: string = "openai") => {
 // 3. Define Nodes (Agents)
 const createAgentNode = (roleName: string, systemPrompt: string) => {
   return async (state: typeof MessagesAnnotation.State, config: any) => {
-    const token = config?.configurable?.hfToken || process.env.HUGGINGFACE_API_KEY || '';
-    if (!token) throw new Error("HuggingFace Token is required.");
-    
-    const model = createModel(token);
+    const model = createModel();
     
     const messages = [
       new SystemMessage(systemPrompt),

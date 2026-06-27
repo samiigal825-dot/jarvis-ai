@@ -1,7 +1,6 @@
 export const maxDuration = 60;
 
 import { NextRequest } from 'next/server';
-import { HfInference } from '@huggingface/inference';
 
 const MODELS = [
   { id: 'meta-llama/Llama-3.1-8B-Instruct', name: 'Llama 3.1 8B', icon: '🧠' },
@@ -151,14 +150,7 @@ function createStreamResponse(readableStream: ReadableStream) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model: requestedModel, hfToken } = body;
-    const HF_TOKEN = hfToken || process.env.HUGGINGFACE_API_KEY || '';
-    
-    if (!HF_TOKEN) {
-      return new Response(JSON.stringify({ error: "HuggingFace API Key is missing on the server." }), { status: 500 });
-    }
-
-    const hf = new HfInference(HF_TOKEN);
+    const { messages, model: requestedModel } = body;
 
     const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const localTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });

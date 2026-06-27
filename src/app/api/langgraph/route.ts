@@ -4,15 +4,10 @@ import { HumanMessage } from '@langchain/core/messages';
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, hfToken } = await req.json();
+    const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Invalid messages format" }), { status: 400 });
-    }
-
-    const token = hfToken || process.env.HUGGINGFACE_API_KEY;
-    if (!token) {
-      return new Response(JSON.stringify({ error: "HuggingFace API Key is missing" }), { status: 500 });
     }
 
     // Convert raw messages to LangChain format
@@ -24,7 +19,7 @@ export async function POST(req: NextRequest) {
         try {
           const events = await jarvisGraph.stream(
             { messages: lcMessages },
-            { configurable: { hfToken: token }, streamMode: "messages" }
+            { configurable: {}, streamMode: "messages" }
           );
 
           for await (const [message, _metadata] of events) {
