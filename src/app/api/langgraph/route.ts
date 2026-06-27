@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
 
           for await (const [message, _metadata] of events) {
             if (message.content) {
-              controller.enqueue(encoder.encode(message.content));
+              const contentStr = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+              controller.enqueue(encoder.encode(contentStr));
             }
           }
         } catch (err: any) {
