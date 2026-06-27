@@ -11,6 +11,7 @@ import { Menu, Moon, Sun, Bot, Activity, Code, Database } from 'lucide-react';
 import { SwarmVisualizer } from '@/components/SwarmVisualizer';
 import { IdeWorkspace } from '@/components/IdeWorkspace';
 import { DataStudio } from '@/components/DataStudio';
+import { CanvasWorkspace } from '@/components/CanvasWorkspace';
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -27,13 +28,14 @@ export default function App() {
     defaultModel: 'meta-llama/Meta-Llama-3-8B-Instruct',
   });
 
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data'>('swarm');
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data' | 'canvas'>('swarm');
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [activeAgent, setActiveAgent] = useState('None');
   const [ideCode, setIdeCode] = useState('print("Hello from JARVIS CEO!")');
   const [ideOutput, setIdeOutput] = useState('');
   const [isIdeRunning, setIsIdeRunning] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
+  const [canvasCode, setCanvasCode] = useState('');
 
   useEffect(() => {
     const localSettings = localStorage.getItem('jarvis_settings');
@@ -167,6 +169,16 @@ export default function App() {
           arr[arr.length - 1] = { ...assistantMsg };
           return arr;
         });
+
+        // Live extract HTML for Canvas
+        const fileMatch = fullContent.match(/\[GENERATE_FILE:([^\]]+\.(html|htm))\]([\s\S]*?)(?:\[\/GENERATE_FILE\]|$)/i);
+        if (fileMatch && fileMatch[3]) {
+          setCanvasCode(fileMatch[3].trim());
+          if (activeWorkspaceTab !== 'canvas') {
+            setActiveWorkspaceTab('canvas');
+            setIsWorkspaceOpen(true);
+          }
+        }
       }
 
       // Check for Autonomous Tool Calls
@@ -398,6 +410,9 @@ export default function App() {
               <button className={`ws-tab ${activeWorkspaceTab === 'data' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('data')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'data' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'data' ? '2px solid var(--primary)' : '2px solid transparent' }}>
                 <Database size={16} /> Data Studio
               </button>
+              <button className={`ws-tab ${activeWorkspaceTab === 'canvas' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('canvas')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'canvas' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'canvas' ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                <Code size={16} /> Preview
+              </button>
             </div>
             <div className="workspace-content" style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
               {activeWorkspaceTab === 'swarm' && <SwarmVisualizer activeAgent={activeAgent} />}
@@ -409,6 +424,7 @@ export default function App() {
                 setIsIdeRunning(false);
               }} output={ideOutput} isExecuting={isIdeRunning} />}
               {activeWorkspaceTab === 'data' && <DataStudio chartData={chartData} />}
+              {activeWorkspaceTab === 'canvas' && <CanvasWorkspace htmlCode={canvasCode} />}
             </div>
           </aside>
         )}

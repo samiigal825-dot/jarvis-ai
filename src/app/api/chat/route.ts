@@ -93,13 +93,16 @@ export async function POST(req: NextRequest) {
     const modelId = requestedModel || MODELS[0].id;
     
     // Improved time-sensitive and live search trigger logic
-    const lastMsg = conversation[conversation.length - 1].content.toLowerCase();
-    const liveKeywords = ['search', 'latest', 'news', 'current', 'weather', 'mausam', 'score', 'match', 'today', 'aaj', 'aj', 'live', 'halat', 'date'];
-    if (liveKeywords.some(keyword => lastMsg.includes(keyword))) {
-      conversation.push({ 
-        role: 'system', 
-        content: `ALERT: The user is asking about live or current events (e.g. today's date). Today's date is ${currentDate}, Time is ${localTime}. Answer directly based on this.` 
-      });
+    const lastMessage = conversation[conversation.length - 1];
+    if (lastMessage.role === 'user' && !lastMessage.content.startsWith('[SYSTEM_TOOL_RESPONSE]')) {
+      const lastMsgText = lastMessage.content.toLowerCase();
+      const liveKeywords = ['search', 'latest', 'news', 'current', 'weather', 'mausam', 'score', 'match', 'today', 'aaj', 'aj', 'live', 'halat', 'date'];
+      if (liveKeywords.some(keyword => lastMsgText.includes(keyword))) {
+        conversation.push({ 
+          role: 'system', 
+          content: `ALERT: The user is asking about live or current events (e.g. today's date). Today's date is ${currentDate}, Time is ${localTime}. Answer directly based on this.` 
+        });
+      }
     }
 
     const stream = new ReadableStream({
