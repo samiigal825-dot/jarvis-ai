@@ -215,6 +215,48 @@ export default function App() {
             return newFiles;
           });
         }
+        
+        // Check for tool calls to abort stream early and prevent hallucinations
+        if (
+          fullContent.includes('[/SUBAGENT]') || 
+          fullContent.includes('[/RUN_PYTHON]') ||
+          fullContent.match(/\[SEARCH:(.*?)\]/) ||
+          fullContent.match(/\[GENERATE_IMAGE:(.*?)\]/)
+        ) {
+          abortControllerRef.current?.abort();
+          break;
+        }
+      }
+
+      // Check for Image Generation Tool
+      const imageMatch = fullContent.match(/\[GENERATE_IMAGE:(.*?)\]/i);
+      if (imageMatch && imageMatch[1]) {
+        const prompt = imageMatch[1].trim();
+        setMessages(prev => [
+          ...prev, 
+          { id: Date.now().toString(), role: 'system', content: `🎨 Generating image for: "${prompt}"...`, timestamp: Date.now() }
+        ]);
+        
+        try {
+          const imgRes = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, hfToken: settings.hfToken })
+          });
+          const imgData = await imgRes.json();
+          const imgOutput = imgData.image || imgData.error;
+          
+          setIsLoading(false);
+          if (imgData.image) {
+            await handleSend(undefined, `[SYSTEM_TOOL_RESPONSE] Image generated successfully.\n![Generated Image](${imgOutput})`, [...newMessages, assistantMsg]);
+          } else {
+            await handleSend(undefined, `[SYSTEM_TOOL_RESPONSE] Image generation failed: ${imgOutput}`, [...newMessages, assistantMsg]);
+          }
+        } catch (err: any) {
+          setIsLoading(false);
+          await handleSend(undefined, `[SYSTEM_TOOL_RESPONSE] Image generation error: ${err.message}`, [...newMessages, assistantMsg]);
+        }
+        return;
       }
 
       // Check for Autonomous Tool Calls

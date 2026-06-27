@@ -33,6 +33,8 @@ AUTONOMOUS TOOLS USE:
   print("hello")
   [/RUN_PYTHON]
   CRITICAL: DO NOT use markdown backticks inside the RUN_PYTHON tags.
+- If the user asks for a picture, image, logo, or diagram, you can generate it by outputting EXACTLY:
+  [GENERATE_IMAGE: A detailed description of the image]
 - If the user wants you to write code, create a file, or build a UI/Web App, you MUST output it using this exact format:
   [GENERATE_FILE:filename.ext]
   ...raw code here...
