@@ -239,7 +239,8 @@ export default function App() {
       }
       
       // Check for Subagent Delegation
-      const subagentMatch = fullContent.match(/\[SUBAGENT:\s*([^\]]+)\]([\s\S]*?)\[\/SUBAGENT\]/);
+      const subagentMatch = fullContent.match(/\[SUBAGENT:\s*([^\]]+)\]([\s\S]*?)\[\/SUBAGENT\]/i) 
+                         || fullContent.match(/SUBAGENT:\s*([^\n\[\]]+)\n([\s\S]*?)(?:WAITING|ASSIGNING|\[SUBAGENT|\[\/SUBAGENT\]|$)/i);
       if (subagentMatch && subagentMatch[1] && subagentMatch[2]) {
         const role = subagentMatch[1].trim();
         const task = subagentMatch[2].trim();
