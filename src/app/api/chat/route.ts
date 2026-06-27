@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+export const maxDuration = 60; // Use default Node.js runtime with 60s timeout instead of Edge
 
 import { NextRequest } from 'next/server';
 
@@ -67,17 +67,11 @@ export async function POST(req: NextRequest) {
 
     const modelId = requestedModel || MODELS[0].id;
     
-    // Check if the last user message implicitly needs a search but the user didn't use the tag
-    // (This is advanced: we force the AI to use the tag by injecting it if the user asks for real-time info)
+    // Check if the last user message implicitly needs a search
     const lastMsg = conversation[conversation.length - 1].content.toLowerCase();
     if (lastMsg.includes('search') || lastMsg.includes('latest') || lastMsg.includes('news') || lastMsg.includes('current')) {
       conversation.push({ role: 'system', content: 'Hint: You may want to use [SEARCH: query] to get up-to-date information for this request.' });
     }
-
-    // Single pass call (we don't have a full multi-turn autonomous loop in Edge streaming yet, 
-    // but we can simulate it by pre-searching if needed, or instructing the AI).
-    // For true autonomous streaming, if AI outputs [SEARCH:], we'd have to interrupt and recall. 
-    // For Vercel Edge, we'll stream directly. The frontend or a second pass will handle it.
 
     const response = await fetch(`https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`, {
       method: 'POST',
@@ -86,7 +80,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: `API Error: ${await response.text()}` }), { status: 502 });
+      return new Response(JSON.stringify({ error: `API Error: ${await response.text()}` }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
     const reader = response.body?.getReader();
@@ -115,9 +109,13 @@ export async function POST(req: NextRequest) {
                 const parsed = JSON.parse(data);
                 const content = parsed.choices?.[0]?.delta?.content;
                 if (content) controller.enqueue(encoder.encode(content));
-              } catch {}
+              } catch (err: any) {
+                // Ignore parse errors on incomplete chunks
+              }
             }
           }
+        } catch (err) {
+          console.error('Stream reading error:', err);
         } finally {
           controller.close();
         }
@@ -126,7 +124,11 @@ export async function POST(req: NextRequest) {
 
     return createStreamResponse(stream);
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error('API Error:', err);
+    return new Response(
+      JSON.stringify({ error: `System Error: ${err.message || String(err)}` }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
 
