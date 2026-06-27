@@ -7,11 +7,12 @@ import { ChatInput } from '@/components/ChatInput';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { SettingsModal } from '@/components/SettingsModal';
 import { Message, Conversation, Settings } from '@/types';
-import { Menu, Moon, Sun, Bot, Activity, Code, Database } from 'lucide-react';
+import { Menu, Moon, Sun, Bot, Activity, Code, Database, Terminal as TerminalIcon } from 'lucide-react';
 import { SwarmVisualizer } from '@/components/SwarmVisualizer';
 import { IdeWorkspace } from '@/components/IdeWorkspace';
 import { DataStudio } from '@/components/DataStudio';
 import { CanvasWorkspace } from '@/components/CanvasWorkspace';
+import { TerminalWorkspace } from '@/components/TerminalWorkspace';
 import JSZip from 'jszip';
 
 export default function App() {
@@ -29,7 +30,7 @@ export default function App() {
     defaultModel: 'meta-llama/Meta-Llama-3-8B-Instruct',
   });
 
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data' | 'canvas'>('swarm');
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data' | 'canvas' | 'terminal'>('swarm');
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [activeAgent, setActiveAgent] = useState('None');
   const [activeTask, setActiveTask] = useState('');
@@ -514,6 +515,9 @@ export default function App() {
               <button className={`ws-tab ${activeWorkspaceTab === 'canvas' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('canvas')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'canvas' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'canvas' ? '2px solid var(--primary)' : '2px solid transparent' }}>
                 <Code size={16} /> Preview
               </button>
+              <button className={`ws-tab ${activeWorkspaceTab === 'terminal' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTab('terminal')} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: activeWorkspaceTab === 'terminal' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderBottom: activeWorkspaceTab === 'terminal' ? '2px solid var(--primary)' : '2px solid transparent' }}>
+                <TerminalIcon size={16} /> Terminal
+              </button>
             </div>
             <div className="workspace-content" style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
               {activeWorkspaceTab === 'swarm' && <SwarmVisualizer activeAgent={activeAgent} activeTask={activeTask} />}
@@ -526,6 +530,7 @@ export default function App() {
               }} output={ideOutput} isExecuting={isIdeRunning} />}
               {activeWorkspaceTab === 'data' && <DataStudio chartData={chartData} />}
               {activeWorkspaceTab === 'canvas' && <CanvasWorkspace htmlCode={canvasCode} />}
+              {activeWorkspaceTab === 'terminal' && <TerminalWorkspace files={projectFiles} />}
             </div>
           </aside>
         )}
