@@ -30,7 +30,8 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
 
   // Complex parser for Markdown + Code Blocks + GENERATE_FILE tags
   const renderParts = () => {
-    const parts = [];
+    type Part = { type: string; content: string; language?: string; filename?: string };
+    const parts: Part[] = [];
     let currentText = '';
     
     // Check for [GENERATE_FILE:filename]...[/GENERATE_FILE]
@@ -100,7 +101,8 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
   };
 
   function parseMarkdown(text: string) {
-    const p = [];
+    type Part = { type: string; content: string; language?: string; filename?: string };
+    const p: Part[] = [];
     let curr = '';
     let inCode = false;
     let lang = '';
