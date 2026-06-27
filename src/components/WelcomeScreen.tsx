@@ -17,19 +17,19 @@ export function WelcomeScreen({ onPromptClick }: WelcomeScreenProps) {
   ];
 
   const prompts = [
-    "I have a CSV file that needs data cleaning and formatting.",
-    "Write a Python script to scrape a website and save as JSON.",
-    "Analyze this image and extract all text from it.",
-    "Help me design a new database schema for an e-commerce app.",
+    "Run full data deduplication and analysis on the Q3 Financials CSV.",
+    "Initialize the Enterprise Swarm Protocol to draft a technical spec.",
+    "Conduct a real-time web search for current market conditions.",
+    "Debug the attached Python script and optimize for performance.",
   ];
 
   return (
     <div className="welcome animate-fade-in">
       <div className="welcome-card">
-        <div className="welcome-icon">🧠</div>
-        <h1 className="welcome-title">Hi, I'm Jarvis.</h1>
+        <div className="welcome-icon" style={{filter: 'drop-shadow(0 0 10px var(--primary))'}}>🌐</div>
+        <h1 className="welcome-title" style={{letterSpacing: '-0.03em'}}>JARVIS Enterprise Workspace</h1>
         <p className="welcome-desc">
-          Your personal CEO AI assistant. I can write code, analyze data, edit files, and solve complex problems. What can I do for you today?
+          Autonomous CEO & Multi-Agent Swarm Platform. Ready to orchestrate data pipelines, execute code, and perform deep analytical reasoning.
         </p>
         
         <div className="welcome-chips">

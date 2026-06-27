@@ -209,6 +209,35 @@ export default function App() {
         return;
       }
       
+      // Check for Subagent Delegation
+      const subagentMatch = fullContent.match(/\[SUBAGENT:\s*([^\]]+)\]([\s\S]*?)\[\/SUBAGENT\]/);
+      if (subagentMatch && subagentMatch[1] && subagentMatch[2]) {
+        const role = subagentMatch[1].trim();
+        const task = subagentMatch[2].trim();
+        
+        setMessages(prev => [
+          ...prev, 
+          { id: Date.now().toString(), role: 'system', content: `🤖 Delegating to Subagent '${role}' for: "${task.slice(0, 50)}..."`, timestamp: Date.now() }
+        ]);
+        
+        const subRes = await fetch('/api/subagent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role, task, hfToken: settings.hfToken })
+        });
+        
+        const subData = await subRes.json();
+        const subOutput = subData.result || subData.error || 'No output.';
+        
+        setIsLoading(false);
+        await handleSend(
+          undefined,
+          `[SYSTEM_TOOL_RESPONSE] Subagent '${role}' execution output:\n\`\`\`\n${subOutput}\n\`\`\`\n\nPlease analyze this result and continue your primary task.`,
+          [...newMessages, assistantMsg]
+        );
+        return;
+      }
+      
       setConversations(prev => prev.map(c => 
         c.id === activeId ? { ...c, messages: [...newMessages, assistantMsg], updatedAt: Date.now() } : c
       ));

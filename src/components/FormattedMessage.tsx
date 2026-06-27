@@ -34,24 +34,21 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
     const parts: Part[] = [];
     let currentText = '';
     
-    // Check for [GENERATE_FILE:filename]...[/GENERATE_FILE]
-    const fileRegex = /\[GENERATE_FILE:([^\]]+)\]([\s\S]*?)\[\/GENERATE_FILE\]/g;
+    // Check for <thinking>...</thinking>
+    const thinkingRegex = /<thinking>([\s\S]*?)(?:<\/thinking>|$)/g;
     
     let lastIndex = 0;
     let match;
     
-    while ((match = fileRegex.exec(content)) !== null) {
-      // Add preceding text
+    while ((match = thinkingRegex.exec(content)) !== null) {
       if (match.index > lastIndex) {
         const textPart = content.slice(lastIndex, match.index);
         parts.push(...parseMarkdown(textPart));
       }
       
-      // Add the file generation block
       parts.push({
-        type: 'file',
-        filename: match[1],
-        content: match[2].trim()
+        type: 'thinking',
+        content: match[1].trim()
       });
       
       lastIndex = match.index + match[0].length;
@@ -62,7 +59,30 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
       parts.push(...parseMarkdown(content.slice(lastIndex)));
     }
     
-    return parts.map((part, index) => {
+    // Now process [GENERATE_FILE] inside the non-thinking parts if necessary (or we can just keep them separate).
+    // To make it simple, let's just do a second pass for GENERATE_FILE on 'text' parts.
+    const finalParts: Part[] = [];
+    parts.forEach(part => {
+      if (part.type === 'text') {
+        const fileRegex = /\[GENERATE_FILE:([^\]]+)\]([\s\S]*?)\[\/GENERATE_FILE\]/g;
+        let tLast = 0;
+        let tMatch;
+        while ((tMatch = fileRegex.exec(part.content)) !== null) {
+          if (tMatch.index > tLast) {
+            finalParts.push({ type: 'text', content: part.content.slice(tLast, tMatch.index) });
+          }
+          finalParts.push({ type: 'file', filename: tMatch[1], content: tMatch[2].trim() });
+          tLast = tMatch.index + tMatch[0].length;
+        }
+        if (tLast < part.content.length) {
+          finalParts.push({ type: 'text', content: part.content.slice(tLast) });
+        }
+      } else {
+        finalParts.push(part);
+      }
+    });
+
+    return finalParts.map((part, index) => {
       if (part.type === 'file') {
         return (
           <div key={index} style={{ margin: '12px 0', padding: '16px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -74,6 +94,18 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
               <Download size={16} /> Download
             </button>
           </div>
+        );
+      }
+      
+      if (part.type === 'thinking') {
+        return (
+          <details key={index} className="thinking-block" open={false}>
+            <summary className="thinking-header">
+              <span className="thinking-icon">🧠</span>
+              <span className="thinking-title">Agentic Reasoning Process</span>
+            </summary>
+            <div className="thinking-content" dangerouslySetInnerHTML={{ __html: formatText(part.content) }} />
+          </details>
         );
       }
       
