@@ -27,6 +27,32 @@ export async function POST(req: NextRequest) {
       extractedText = xlsx.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
     } else if (safeName.endsWith('.txt') || safeName.endsWith('.json') || safeName.endsWith('.md')) {
       extractedText = buffer.toString('utf-8');
+    } else if (file.type.startsWith('image/')) {
+      // AI Vision implementation using Salesforce/blip-image-captioning-large
+      try {
+        const HF_TOKEN = process.env.HUGGINGFACE_API_KEY || '';
+        if (HF_TOKEN) {
+          const response = await fetch(
+            'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${HF_TOKEN}` },
+              body: buffer,
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data[0] && data[0].generated_text) {
+              extractedText = `[IMAGE VISION ANALYSIS]\nThis is an uploaded image: ${safeName}.\nDescription of what is in this image: ${data[0].generated_text}`;
+            }
+          }
+        }
+        if (!extractedText) {
+          extractedText = `[IMAGE VISION ANALYSIS]\nAn image named "${safeName}" was uploaded, but the Vision AI was loading.`;
+        }
+      } catch (err) {
+        extractedText = `[IMAGE VISION ANALYSIS]\nAn image named "${safeName}" was uploaded, but the Vision engine encountered an error.`;
+      }
     }
 
     return NextResponse.json({

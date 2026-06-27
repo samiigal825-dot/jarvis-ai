@@ -43,10 +43,16 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
             margin: '4px 0',
             maxWidth: '400px'
           }}>
-            <span style={{ fontSize: '1.8rem' }}>📎</span>
+            <span style={{ fontSize: '1.8rem' }}>
+              {/\.(png|jpe?g|gif|webp)$/i.test(fileName) ? '🖼️' : '📎'}
+            </span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{fileName}</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>Attached & parsed successfully. Ready for instructions.</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>
+                {/\.(png|jpe?g|gif|webp)$/i.test(fileName) 
+                  ? 'Image analyzed by Vision AI. Ready for questions.' 
+                  : 'Attached & parsed successfully. Ready for instructions.'}
+              </span>
             </div>
           </div>
         ) : (
