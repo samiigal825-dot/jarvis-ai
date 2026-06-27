@@ -12,6 +12,7 @@ import { SwarmVisualizer } from '@/components/SwarmVisualizer';
 import { IdeWorkspace } from '@/components/IdeWorkspace';
 import { DataStudio } from '@/components/DataStudio';
 import { CanvasWorkspace } from '@/components/CanvasWorkspace';
+import JSZip from 'jszip';
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -37,6 +38,8 @@ export default function App() {
   const [isIdeRunning, setIsIdeRunning] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
   const [canvasCode, setCanvasCode] = useState('');
+  const [projectFiles, setProjectFiles] = useState<Record<string, string>>({});
+  const [isDataFilesOpen, setIsDataFilesOpen] = useState(false);
 
   useEffect(() => {
     const localSettings = localStorage.getItem('jarvis_settings');
@@ -171,14 +174,46 @@ export default function App() {
           return arr;
         });
 
-        // Live extract HTML for Canvas
-        const fileMatch = fullContent.match(/\[GENERATE_FILE:([^\]]+\.(html|htm))\]([\s\S]*?)(?:\[\/GENERATE_FILE\]|$)/i);
-        if (fileMatch && fileMatch[3]) {
-          setCanvasCode(fileMatch[3].trim());
-          if (activeWorkspaceTab !== 'canvas') {
-            setActiveWorkspaceTab('canvas');
-            setIsWorkspaceOpen(true);
-          }
+        // Live extract ALL files
+        const fileRegex = /\[GENERATE_FILE:([^\]]+)\]([\s\S]*?)(?:\[\/GENERATE_FILE\]|$)/gi;
+        let match;
+        const extractedFiles: Record<string, string> = {};
+        while ((match = fileRegex.exec(fullContent)) !== null) {
+          extractedFiles[match[1].trim()] = match[2].trim();
+        }
+        
+        if (Object.keys(extractedFiles).length > 0) {
+          setProjectFiles(prev => {
+            const newFiles = { ...prev, ...extractedFiles };
+            
+            // Check if we have an HTML entry point
+            const htmlFile = Object.keys(newFiles).find(f => f.endsWith('.html') || f.endsWith('.htm'));
+            if (htmlFile) {
+              let injectedHtml = newFiles[htmlFile];
+              
+              // Inject CSS
+              const cssFiles = Object.keys(newFiles).filter(f => f.endsWith('.css'));
+              cssFiles.forEach(css => {
+                const regex = new RegExp(`<link\\s+[^>]*href=["'](?:.\\/)?${css.replace('.', '\\.')}["'][^>]*>`, 'i');
+                injectedHtml = injectedHtml.replace(regex, `<style>\n${newFiles[css]}\n</style>`);
+              });
+              
+              // Inject JS
+              const jsFiles = Object.keys(newFiles).filter(f => f.endsWith('.js'));
+              jsFiles.forEach(js => {
+                const regex = new RegExp(`<script\\s+[^>]*src=["'](?:.\\/)?${js.replace('.', '\\.')}["'][^>]*><\\/script>`, 'i');
+                injectedHtml = injectedHtml.replace(regex, `<script>\n${newFiles[js]}\n</script>`);
+              });
+              
+              setCanvasCode(injectedHtml);
+              if (activeWorkspaceTab !== 'canvas') {
+                setActiveWorkspaceTab('canvas');
+                setIsWorkspaceOpen(true);
+              }
+            }
+            
+            return newFiles;
+          });
         }
       }
 
@@ -347,6 +382,7 @@ export default function App() {
         onNew={handleNewChat}
         onDelete={(id) => setConversations(conversations.filter(c => c.id !== id))}
         onSettings={() => setIsSettingsOpen(true)}
+        onDataFilesOpen={() => setIsDataFilesOpen(true)}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
@@ -450,6 +486,62 @@ export default function App() {
         settings={settings} 
         onSave={setSettings} 
       />
+
+      {isDataFilesOpen && (
+        <div className="modal-overlay" onClick={() => setIsDataFilesOpen(false)}>
+          <div className="modal-content data-files-modal" onClick={e => e.stopPropagation()} style={{ width: '80%', maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-header">
+              <h2>Data & Project Files</h2>
+              <button className="btn-icon" onClick={() => setIsDataFilesOpen(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {Object.keys(projectFiles).length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px' }}>
+                  No project files generated yet.
+                </div>
+              ) : (
+                <div className="file-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {Object.entries(projectFiles).map(([filename, content]) => (
+                    <div key={filename} className="file-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--surface-hover)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                      <span style={{ fontWeight: 600 }}>{filename}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => {
+                          const blob = new Blob([content], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = filename;
+                          a.click();
+                        }}>Download</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ borderTop: '1px solid var(--border)', padding: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                className="btn-primary" 
+                disabled={Object.keys(projectFiles).length === 0}
+                onClick={async () => {
+                  const zip = new JSZip();
+                  Object.entries(projectFiles).forEach(([name, data]) => {
+                    zip.file(name, data);
+                  });
+                  const content = await zip.generateAsync({ type: 'blob' });
+                  const url = URL.createObjectURL(content);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'jarvis_project.zip';
+                  a.click();
+                }}
+              >
+                Download Full Project (ZIP)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

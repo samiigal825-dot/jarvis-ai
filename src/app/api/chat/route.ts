@@ -40,7 +40,7 @@ AUTONOMOUS TOOLS USE:
   [/GENERATE_FILE]
   CRITICAL RULES FOR GENERATE_FILE:
   1. DO NOT wrap the code inside with markdown backticks. Write RAW code directly inside the tags.
-  2. If building a Web App, UI, or Dashboard, you MUST generate EXACTLY ONE single 'index.html' file that contains all CSS inside style tags and JavaScript inside script tags. ABSOLUTELY DO NOT split it into multiple files (HTML, CSS, JS). You will be penalized if you output more than one file.
+  2. If building a Web App, UI, or Project, you must generate all necessary files based on the project's requirements (e.g., HTML, CSS, JS, Python, package.json, etc.). Do not force everything into one file unless asked. For the Canvas Preview to work correctly, make sure the main HTML file is named 'index.html'.
 - If a task involves writing code, building a Web App/UI, file uploads, deep research, or multi-step execution, you MUST use the **Enterprise Swarm Protocol**.
   DO NOT do it yourself. Instead, delegate to your autonomous team. 
   CRITICAL RULE: For building web apps, ALWAYS use the Swarm Protocol so the user can see the progress in the sidebar graph. Do NOT use GENERATE_FILE yourself for web apps, let the Coder subagent do it.

@@ -11,11 +11,12 @@ interface SidebarProps {
   onNew: () => void;
   onDelete: (id: string) => void;
   onSettings: () => void;
+  onDataFilesOpen: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
-export function Sidebar({ conversations, currentId, onSelect, onNew, onDelete, onSettings, isOpen, setIsOpen }: SidebarProps) {
+export function Sidebar({ conversations, currentId, onSelect, onNew, onDelete, onSettings, onDataFilesOpen, isOpen, setIsOpen }: SidebarProps) {
   return (
     <>
       <div className={`sidebar-backdrop ${isOpen ? 'show' : ''}`} onClick={() => setIsOpen(false)} />
@@ -66,7 +67,7 @@ export function Sidebar({ conversations, currentId, onSelect, onNew, onDelete, o
         </div>
 
         <div className="sidebar-footer">
-          <button className="sidebar-footer-btn">
+          <button className="sidebar-footer-btn" onClick={() => { onDataFilesOpen(); setIsOpen(false); }}>
             <HardDrive size={16} /> Data & Files
           </button>
           <button className="sidebar-footer-btn" onClick={onSettings}>
