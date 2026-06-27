@@ -68,7 +68,7 @@ export function SwarmVisualizer({ activeAgent }: SwarmVisualizerProps) {
         
         return {
           ...node,
-          style: { ...node.style, border: \`1px solid \${border}\`, color, boxShadow: glow }
+          style: { ...node.style, border: `1px solid ${border}`, color, boxShadow: glow }
         };
       })
     );
@@ -105,7 +105,7 @@ export function SwarmVisualizer({ activeAgent }: SwarmVisualizerProps) {
         <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{color: 'var(--accent)'}}>●</span> Swarm Visualizer
         </h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status: {activeAgent === 'None' ? 'Idle' : \`\${activeAgent} Working\`}</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status: {activeAgent === 'None' ? 'Idle' : `${activeAgent} Working`}</span>
       </div>
       <div style={{ width: '100%', height: 'calc(100% - 45px)' }}>
         <ReactFlow 
