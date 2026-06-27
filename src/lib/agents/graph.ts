@@ -9,7 +9,7 @@ export const GraphState = MessagesAnnotation;
 export const createModel = (token: string, modelName: string = "meta-llama/Llama-3.3-70B-Instruct") => {
   return new ChatOpenAI({
     modelName: modelName,
-    openAIApiKey: token,
+    apiKey: token || "dummy", // fallback to prevent initialization error if token is weird
     configuration: {
       baseURL: "https://api-inference.huggingface.co/v1/"
     },
@@ -37,10 +37,10 @@ const createAgentNode = (roleName: string, systemPrompt: string) => {
 };
 
 const SYSTEM_PROMPTS = {
-  Research: "You are the JARVIS Research Agent. Your job is to search the web and documentation to provide accurate context.",
-  Developer: "You are the JARVIS Developer Agent. You write production-ready code in a single file format. You never hallucinate success. Output [GENERATE_FILE:index.html] with the full code.",
+  Research: "You are the JARVIS Research Agent. Your job is to search the web and documentation to provide accurate context. Use [SEARCH:query] to search the web.",
+  Developer: "You are the JARVIS Developer Agent. You write production-ready code in a single file format. You never hallucinate success. ALWAYS use this format:\n\n[GENERATE_FILE:index.html]\n<!DOCTYPE html>\n<html>...</html>\n[/GENERATE_FILE]",
   QA: "You are the JARVIS QA Agent. You review code for bugs and edge cases.",
-  Data: "You are the JARVIS Data Agent. You parse and analyze CSV and Excel data, and modify it accurately. Output any changed files using [GENERATE_FILE].",
+  Data: "You are the JARVIS Data Agent. You parse and analyze CSV and Excel data. To run python data analysis, use:\n\n[RUN_PYTHON]\nimport pandas as pd\n...\n[/RUN_PYTHON]",
   Image: "You are the JARVIS Image Agent. You generate image prompts and use [GENERATE_IMAGE:prompt] to create visuals.",
   Coordinator: "You are the JARVIS CEO (Coordinator). You analyze the user's request and decide which agent to call next. If the task is fully complete, you reply directly with the final output. If you need an agent, you output exactly: CALL_<AGENT_NAME>. Available: RESEARCH, DEVELOPER, QA, DATA, IMAGE."
 };

@@ -17,32 +17,31 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Run Python script using Piston API for serverless compatibility
-      const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language: 'python',
-          version: '3.10.0',
-          files: [{ name: 'main.py', content: cleanCode }]
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to execute code on remote server.');
-      }
-
-      const data = await res.json();
+      const { exec } = require('child_process');
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
       
-      const stdout = data.run?.stdout || '';
-      const stderr = data.run?.stderr || '';
-      const output = data.run?.output || '';
-
-      return NextResponse.json({
-        success: true,
-        stdout,
-        stderr,
-        output: output + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
+      const tmpDir = os.tmpdir();
+      const filePath = path.join(tmpDir, `script_${Date.now()}.py`);
+      fs.writeFileSync(filePath, cleanCode);
+      
+      return new Promise((resolve) => {
+        exec(`python "${filePath}"`, { timeout: 10000 }, (error: any, stdout: string, stderr: string) => {
+          // Clean up
+          try { fs.unlinkSync(filePath); } catch (e) {}
+          
+          if (error && !stderr) {
+            stderr = error.message;
+          }
+          
+          resolve(NextResponse.json({
+            success: !error,
+            stdout,
+            stderr,
+            output: (stdout || '') + (stderr ? `\n\n[ERRORS / STDERR]:\n${stderr}` : '')
+          }));
+        });
       });
     } catch (err: any) {
       return NextResponse.json({ 
