@@ -160,7 +160,7 @@ export default function App() {
 
       // Check for Autonomous Tool Calls
       const searchMatch = fullContent.match(/\[SEARCH:(.*?)\]/);
-      if (searchMatch && searchMatch[1]) {
+      if (searchMatch && searchMatch[1] && !['query', 'your search query', 'your_search_query', '<query>', 'your-search-query'].includes(searchMatch[1].trim().toLowerCase())) {
         const query = searchMatch[1].trim();
         // Append system message to UI to show we are searching
         setMessages(prev => [
