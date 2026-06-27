@@ -31,6 +31,7 @@ export default function App() {
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'swarm' | 'ide' | 'data' | 'canvas'>('swarm');
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [activeAgent, setActiveAgent] = useState('None');
+  const [activeTask, setActiveTask] = useState('');
   const [ideCode, setIdeCode] = useState('print("Hello from JARVIS CEO!")');
   const [ideOutput, setIdeOutput] = useState('');
   const [isIdeRunning, setIsIdeRunning] = useState(false);
@@ -246,6 +247,7 @@ export default function App() {
         const task = subagentMatch[2].trim();
         
         setActiveAgent(role);
+        setActiveTask(task);
         setActiveWorkspaceTab('swarm');
         setIsWorkspaceOpen(true);
         
@@ -284,6 +286,7 @@ export default function App() {
       }
       
       setActiveAgent('None');
+      setActiveTask('');
       setConversations(prev => prev.map(c => 
         c.id === activeId ? { ...c, messages: [...newMessages, assistantMsg], updatedAt: Date.now() } : c
       ));
@@ -416,7 +419,7 @@ export default function App() {
               </button>
             </div>
             <div className="workspace-content" style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
-              {activeWorkspaceTab === 'swarm' && <SwarmVisualizer activeAgent={activeAgent} />}
+              {activeWorkspaceTab === 'swarm' && <SwarmVisualizer activeAgent={activeAgent} activeTask={activeTask} />}
               {activeWorkspaceTab === 'ide' && <IdeWorkspace code={ideCode} onRun={async (c) => { 
                 setIsIdeRunning(true);
                 const r = await fetch('/api/run-python', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code: c }) });

@@ -6,6 +6,7 @@ import 'reactflow/dist/style.css';
 
 interface SwarmVisualizerProps {
   activeAgent: string; // 'JARVIS', 'Manager', 'Coder', 'Verifier', 'None'
+  activeTask?: string;
 }
 
 const initialNodes: Node[] = [
@@ -43,7 +44,7 @@ const initialEdges: Edge[] = [
   { id: 'e4-1', source: 'verifier', target: 'jarvis', type: 'step', animated: false, style: { stroke: '#3f3f46' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#3f3f46' } },
 ];
 
-export function SwarmVisualizer({ activeAgent }: SwarmVisualizerProps) {
+export function SwarmVisualizer({ activeAgent, activeTask }: SwarmVisualizerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -55,11 +56,15 @@ export function SwarmVisualizer({ activeAgent }: SwarmVisualizerProps) {
         let border = '#3f3f46';
         let color = '#a1a1aa';
         let glow = 'none';
+        let label = initialNodes.find(n => n.id === node.id)?.data.label || node.data.label;
         
         if (isActive) {
           border = '#10b981'; // success/active color
           color = '#fff';
           glow = '0 0 10px rgba(16, 185, 129, 0.5)';
+          if (activeTask) {
+             label = `${label}\n[${activeTask.length > 30 ? activeTask.substring(0, 30) + '...' : activeTask}]`;
+          }
         } else if (activeAgent.toLowerCase() === 'jarvis' && node.id === 'jarvis') {
           border = '#3b82f6';
           color = '#fff';
@@ -68,7 +73,8 @@ export function SwarmVisualizer({ activeAgent }: SwarmVisualizerProps) {
         
         return {
           ...node,
-          style: { ...node.style, border: `1px solid ${border}`, color, boxShadow: glow }
+          data: { ...node.data, label },
+          style: { ...node.style, border: `1px solid ${border}`, color, boxShadow: glow, whiteSpace: 'pre-wrap', textAlign: 'center', fontSize: '0.8rem' }
         };
       })
     );
