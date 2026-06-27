@@ -70,7 +70,7 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
               <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--success)', marginBottom: '4px' }}>File Generated</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{part.filename}</div>
             </div>
-            <button className="btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleDownload(part.filename, part.content)}>
+            <button className="btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleDownload(part.filename!, part.content)}>
               <Download size={16} /> Download
             </button>
           </div>

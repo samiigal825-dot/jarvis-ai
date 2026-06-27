@@ -36,19 +36,23 @@ export default function App() {
     setMessages([]);
   };
 
-  const handleSend = async (e?: React.FormEvent, promptOverride?: string) => {
+  const handleSend = async (e?: React.FormEvent, promptOverride?: string, historyOverride?: Message[]) => {
     e?.preventDefault();
     const text = promptOverride || input;
     if (!text.trim() || isLoading) return;
 
-    setInput('');
+    if (!promptOverride) setInput('');
     setIsLoading(true);
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text, timestamp: Date.now() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    const currentMessages = historyOverride || messages;
+    const newMessages = [...currentMessages, userMsg];
+    
+    // Only add user message to UI if it's not a background tool response
+    if (!promptOverride?.startsWith('[SYSTEM_TOOL_RESPONSE]')) {
+      setMessages(newMessages);
+    }
 
-    // Ensure we have an active conversation
     let activeId = currentId;
     if (!activeId) {
       activeId = Date.now().toString();
@@ -70,20 +74,22 @@ export default function App() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      if (!response.body) throw new Error('No response body');
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
 
-      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      
       const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '', timestamp: Date.now() };
       setMessages(prev => [...prev, assistantMsg]);
+
+      let fullContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const text = decoder.decode(value, { stream: true });
-        assistantMsg.content += text;
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        assistantMsg.content = fullContent;
         
         setMessages(prev => {
           const arr = [...prev];
@@ -91,8 +97,32 @@ export default function App() {
           return arr;
         });
       }
+
+      // Check for Autonomous Tool Calls
+      const searchMatch = fullContent.match(/\\[SEARCH:(.*?)\\]/);
+      if (searchMatch && searchMatch[1]) {
+        const query = searchMatch[1].trim();
+        // Append system message to UI to show we are searching
+        setMessages(prev => [
+          ...prev, 
+          { id: Date.now().toString(), role: 'system', content: `🔍 Searching the web for: "${query}"...`, timestamp: Date.now() }
+        ]);
+        
+        // Execute search
+        const searchRes = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const searchData = await searchRes.json();
+        const searchResultText = searchData.results || 'No results found.';
+        
+        // Send back to AI automatically!
+        setIsLoading(false); // reset so we can call again
+        await handleSend(
+          undefined, 
+          `[SYSTEM_TOOL_RESPONSE] Search Results for "${query}":\\n${searchResultText}\\n\\nPlease continue your answer based on these results.`,
+          [...newMessages, assistantMsg]
+        );
+        return;
+      }
       
-      // Update conversation in sidebar
       setConversations(prev => prev.map(c => 
         c.id === activeId ? { ...c, messages: [...newMessages, assistantMsg], updatedAt: Date.now() } : c
       ));
@@ -103,7 +133,7 @@ export default function App() {
         setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: '⚠️ **Error:** Failed to connect to AI engine. ' + err.message, 
+          content: '⚠️ **Error:** ' + err.message, 
           timestamp: Date.now() 
         }]);
       }
@@ -144,7 +174,7 @@ export default function App() {
             <div className="chat-header-model">
               <span className="chat-header-model-icon">🤖</span>
               <span className="chat-header-title">Jarvis CEO</span>
-              <span className="chat-header-badge">HuggingFace Engine</span>
+              <span className="chat-header-badge">Autonomous Agent</span>
             </div>
           </div>
           <div className="chat-header-right">
