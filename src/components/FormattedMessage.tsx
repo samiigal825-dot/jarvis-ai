@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Download } from 'lucide-react';
 
 interface FormattedMessageProps {
   content: string;
@@ -16,44 +16,66 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  // Simple Markdown parser
+  const handleDownload = (filename: string, data: string) => {
+    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Complex parser for Markdown + Code Blocks + GENERATE_FILE tags
   const renderParts = () => {
     const parts = [];
     let currentText = '';
-    let inCodeBlock = false;
-    let codeLanguage = '';
-    let codeContent = '';
     
-    const lines = content.split('\\n');
+    // Check for [GENERATE_FILE:filename]...[/GENERATE_FILE]
+    const fileRegex = /\\[GENERATE_FILE:([^\\]]+)\\]([\\s\\S]*?)\\[\\/GENERATE_FILE\\]/g;
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('\`\`\`')) {
-        if (inCodeBlock) {
-          parts.push({ type: 'code', language: codeLanguage, content: codeContent.trim() });
-          inCodeBlock = false;
-          codeLanguage = '';
-          codeContent = '';
-        } else {
-          if (currentText) {
-            parts.push({ type: 'text', content: currentText });
-            currentText = '';
-          }
-          inCodeBlock = true;
-          codeLanguage = line.slice(3).trim();
-        }
-      } else if (inCodeBlock) {
-        codeContent += line + '\\n';
-      } else {
-        currentText += line + '\\n';
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = fileRegex.exec(content)) !== null) {
+      // Add preceding text
+      if (match.index > lastIndex) {
+        const textPart = content.slice(lastIndex, match.index);
+        parts.push(...parseMarkdown(textPart));
       }
+      
+      // Add the file generation block
+      parts.push({
+        type: 'file',
+        filename: match[1],
+        content: match[2].trim()
+      });
+      
+      lastIndex = match.index + match[0].length;
     }
     
-    if (currentText) {
-      parts.push({ type: 'text', content: currentText });
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(...parseMarkdown(content.slice(lastIndex)));
     }
     
     return parts.map((part, index) => {
+      if (part.type === 'file') {
+        return (
+          <div key={index} style={{ margin: '12px 0', padding: '16px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--success)', marginBottom: '4px' }}>File Generated</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{part.filename}</div>
+            </div>
+            <button className="btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleDownload(part.filename, part.content)}>
+              <Download size={16} /> Download
+            </button>
+          </div>
+        );
+      }
+      
       if (part.type === 'code') {
         const isCopied = copiedCode === part.content;
         return (
@@ -71,12 +93,45 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
         );
       }
       
-      // Basic text formatting (bold, links, etc would go here in a real parser)
       return (
         <div key={index} className="msg-content" dangerouslySetInnerHTML={{ __html: formatText(part.content) }} />
       );
     });
   };
+
+  function parseMarkdown(text: string) {
+    const p = [];
+    let curr = '';
+    let inCode = false;
+    let lang = '';
+    let codeStr = '';
+    
+    const lines = text.split('\\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('\`\`\`')) {
+        if (inCode) {
+          p.push({ type: 'code', language: lang, content: codeStr.trim() });
+          inCode = false;
+          lang = '';
+          codeStr = '';
+        } else {
+          if (curr) p.push({ type: 'text', content: curr });
+          curr = '';
+          inCode = true;
+          lang = line.slice(3).trim();
+        }
+      } else if (inCode) {
+        codeStr += line + '\\n';
+      } else {
+        curr += line + '\\n';
+      }
+    }
+    if (curr) p.push({ type: 'text', content: curr });
+    if (codeStr) p.push({ type: 'code', language: lang, content: codeStr.trim() });
+    
+    return p;
+  }
 
   return <>{renderParts()}</>;
 }
