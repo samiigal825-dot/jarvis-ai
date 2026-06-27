@@ -68,7 +68,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           messages: newMessages,
-          model: settings.defaultModel
+          model: settings.defaultModel,
+          hfToken: settings.hfToken
         }),
         signal: abortControllerRef.current.signal
       });

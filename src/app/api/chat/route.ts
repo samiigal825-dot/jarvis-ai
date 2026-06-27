@@ -38,8 +38,8 @@ function createStreamResponse(readableStream: ReadableStream) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, model: requestedModel } = body;
-    const HF_TOKEN = process.env.HUGGINGFACE_API_KEY || '';
+    const { messages, model: requestedModel, hfToken } = body;
+    const HF_TOKEN = hfToken || process.env.HUGGINGFACE_API_KEY || '';
     
     if (!HF_TOKEN) {
       return new Response(JSON.stringify({ error: "HuggingFace API Key is missing on the server." }), { status: 500 });
