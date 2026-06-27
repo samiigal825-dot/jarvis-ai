@@ -1391,3 +1391,11 @@ body::before {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   opacity: 0.8;
 }
+  
+/* Markdown Styles */  
+.msg-content h1, .msg-content h2, .msg-content h3 { margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-primary); }  
+.msg-content p { margin-bottom: 0.5rem; }  
+.msg-content ul, .msg-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }  
+.msg-content li { margin-bottom: 0.25rem; }  
+.msg-content blockquote { border-left: 3px solid var(--accent); padding-left: 1rem; color: var(--text-secondary); font-style: italic; margin-bottom: 1rem; }  
+.msg-content code { background: rgba(255,255,255,0.1); padding: 0.15rem 0.3rem; border-radius: 4px; font-family: monospace; font-size: 0.9em; } 

@@ -198,9 +198,32 @@ export function FormattedMessage({ content, onPreview, onRun }: FormattedMessage
 
 function formatText(text: string) {
   let html = text
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // Bold & Italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Inline Code
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br/>');
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    // Blockquotes
+    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+    // Unordered Lists
+    .replace(/^[-*] (.*$)/gim, '<ul><li>$1</li></ul>')
+    .replace(/<\/ul>\s*<ul>/gim, '')
+    // Ordered Lists
+    .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>')
+    .replace(/<\/ol>\s*<ol>/gim, '')
+    // Newlines
+    .replace(/\n/g, '<br/>')
+    // Cleanup BR tags after block elements
+    .replace(/<\/h(\d)><br\/>/g, '</h$1>')
+    .replace(/<\/ul><br\/>/g, '</ul>')
+    .replace(/<\/ol><br\/>/g, '</ol>')
+    .replace(/<\/blockquote><br\/>/g, '</blockquote>');
   return html;
 }
