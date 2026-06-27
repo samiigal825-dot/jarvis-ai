@@ -59,8 +59,13 @@ export async function POST(req: NextRequest) {
 
     const hf = new HfInference(HF_TOKEN);
 
+    const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const localTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const DYNAMIC_SYSTEM = `${JARVIS_SYSTEM}\n\nCURRENT SERVER CONTEXT:\n- Today's Date: ${currentDate}\n- Current Time: ${localTime}\n- You MUST answer questions about today's date/time directly using these values.`;
+
     let conversation = [
-      { role: 'system', content: JARVIS_SYSTEM },
+      { role: 'system', content: DYNAMIC_SYSTEM },
       ...messages.map((m: any) => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         content: m.content || '',
@@ -69,9 +74,14 @@ export async function POST(req: NextRequest) {
 
     const modelId = requestedModel || MODELS[0].id;
     
+    // Improved time-sensitive and live search trigger logic (supporting Roman Urdu & English)
     const lastMsg = conversation[conversation.length - 1].content.toLowerCase();
-    if (lastMsg.includes('search') || lastMsg.includes('latest') || lastMsg.includes('news') || lastMsg.includes('current')) {
-      conversation.push({ role: 'system', content: 'Hint: You may want to use [SEARCH: query] to get up-to-date information for this request.' });
+    const liveKeywords = ['search', 'latest', 'news', 'current', 'weather', 'mausam', 'score', 'match', 'today', 'aaj', 'aj', 'live', 'halat'];
+    if (liveKeywords.some(keyword => lastMsg.includes(keyword))) {
+      conversation.push({ 
+        role: 'system', 
+        content: `ALERT: The user is asking about live or current events. Today's date is ${currentDate}. If you need live info (like weather, scores, or news), you MUST output: [SEARCH: search query] now.` 
+      });
     }
 
     const stream = new ReadableStream({
