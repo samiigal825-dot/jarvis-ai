@@ -8,9 +8,11 @@ import { Copy, RefreshCw, Pencil, ThumbsUp, ThumbsDown, Check } from 'lucide-rea
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+  onPreview?: (code: string) => void;
+  onRun?: (code: string) => void;
 }
 
-export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onPreview, onRun }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -78,7 +80,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
             </div>
           </div>
         ) : (
-          <FormattedMessage content={message.content} />
+          <FormattedMessage content={message.content} onPreview={onPreview} onRun={onRun} />
         )}
         {isStreaming && <span className="streaming-cursor" />}
       </div>

@@ -5,9 +5,11 @@ import { Copy, Check, Download } from 'lucide-react';
 
 interface FormattedMessageProps {
   content: string;
+  onPreview?: (code: string) => void;
+  onRun?: (code: string) => void;
 }
 
-export function FormattedMessage({ content }: FormattedMessageProps) {
+export function FormattedMessage({ content, onPreview, onRun }: FormattedMessageProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const handleCopy = (code: string) => {
@@ -90,9 +92,21 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
               <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--success)', marginBottom: '4px' }}>File Generated</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{part.filename}</div>
             </div>
-            <button className="btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleDownload(part.filename!, part.content)}>
-              <Download size={16} /> Download
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {onPreview && (part.filename?.endsWith('.html') || part.filename?.endsWith('.htm')) && (
+                <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => onPreview(part.content)}>
+                  Preview
+                </button>
+              )}
+              {onRun && part.filename?.endsWith('.py') && (
+                <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => onRun(part.content)}>
+                  Run IDE
+                </button>
+              )}
+              <button className="btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleDownload(part.filename!, part.content)}>
+                <Download size={16} /> Download
+              </button>
+            </div>
           </div>
         );
       }
@@ -115,9 +129,21 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
           <div key={index} className="code-block">
             <div className="code-header">
               <span>{part.language || 'text'}</span>
-              <button className="code-copy-btn" onClick={() => handleCopy(part.content)}>
-                {isCopied ? <Check size={14} /> : <Copy size={14} />} {isCopied ? 'Copied' : 'Copy'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {onPreview && (part.language === 'html' || part.language === 'javascript' || part.language === 'js') && (
+                  <button className="code-copy-btn" onClick={() => onPreview(part.content)}>
+                    ▶ Preview
+                  </button>
+                )}
+                {onRun && (part.language === 'python' || part.language === 'py') && (
+                  <button className="code-copy-btn" onClick={() => onRun(part.content)}>
+                    ▶ Run
+                  </button>
+                )}
+                <button className="code-copy-btn" onClick={() => handleCopy(part.content)}>
+                  {isCopied ? <Check size={14} /> : <Copy size={14} />} {isCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
             </div>
             <pre>
               <code>{part.content}</code>

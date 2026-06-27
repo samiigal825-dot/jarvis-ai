@@ -386,6 +386,16 @@ export default function App() {
                 key={msg.id} 
                 message={msg} 
                 isStreaming={isLoading && idx === messages.length - 1 && msg.role === 'assistant'} 
+                onPreview={(code) => {
+                  setCanvasCode(code);
+                  setActiveWorkspaceTab('canvas');
+                  setIsWorkspaceOpen(true);
+                }}
+                onRun={(code) => {
+                  setIdeCode(code);
+                  setActiveWorkspaceTab('ide');
+                  setIsWorkspaceOpen(true);
+                }}
               />
             ))
           )}
