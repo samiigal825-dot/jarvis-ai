@@ -5,7 +5,7 @@ import { Send, Square, Paperclip, Mic } from 'lucide-react';
 
 interface ChatInputProps {
   input: string;
-  setInput: (val: string) => void;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
   onSubmit: (e?: React.FormEvent, promptOverride?: string) => void;
   onFileUploaded: (fileName: string, extractedData: string) => void;
   isLoading: boolean;
