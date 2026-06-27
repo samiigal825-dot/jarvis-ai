@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       const filePath = path.join(tmpDir, `script_${Date.now()}.py`);
       fs.writeFileSync(filePath, cleanCode);
       
-      return new Promise((resolve) => {
+      return new Promise<NextResponse>((resolve) => {
         exec(`python "${filePath}"`, { timeout: 10000 }, (error: any, stdout: string, stderr: string) => {
           // Clean up
           try { fs.unlinkSync(filePath); } catch (e) {}
