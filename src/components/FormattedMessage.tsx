@@ -34,7 +34,7 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
     let currentText = '';
     
     // Check for [GENERATE_FILE:filename]...[/GENERATE_FILE]
-    const fileRegex = /\\[GENERATE_FILE:([^\\]]+)\\]([\\s\\S]*?)\\[\\/GENERATE_FILE\\]/g;
+    const fileRegex = /\[GENERATE_FILE:([^\]]+)\]([\s\S]*?)\[\/GENERATE_FILE\]/g;
     
     let lastIndex = 0;
     let match;
