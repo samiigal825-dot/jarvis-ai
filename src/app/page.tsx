@@ -228,6 +228,15 @@ export default function App() {
         }
       }
 
+      // Auto ZIP Generation Notification
+      const fileMatches = [...fullContent.matchAll(/\[GENERATE_FILE:([^\]]+)\]/gi)];
+      if (fileMatches.length > 1) {
+        setMessages(prev => [
+          ...prev,
+          { id: Date.now().toString(), role: 'system', content: `📦 **Project Bundle Ready!** ${fileMatches.length} files generated. Open **Data & Files** to download the complete ZIP archive.`, timestamp: Date.now() }
+        ]);
+      }
+
       // Check for Image Generation Tool
       const imageMatch = fullContent.match(/\[GENERATE_IMAGE:(.*?)\]/i);
       if (imageMatch && imageMatch[1]) {
