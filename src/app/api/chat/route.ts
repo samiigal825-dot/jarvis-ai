@@ -39,8 +39,8 @@ AUTONOMOUS TOOLS USE:
   ...raw code here...
   [/GENERATE_FILE]
   CRITICAL RULES FOR GENERATE_FILE:
-  1. DO NOT wrap the code inside with markdown backticks (```). Write RAW code directly inside the tags.
-  2. If building a Web App, UI, or Dashboard, you MUST generate a SINGLE comprehensive \`index.html\` file that contains all CSS inside \`<style>\` and JavaScript inside \`<script>\` tags. DO NOT split it into multiple files (HTML, CSS, JS).
+  1. DO NOT wrap the code inside with markdown backticks. Write RAW code directly inside the tags.
+  2. If building a Web App, UI, or Dashboard, you MUST generate a SINGLE comprehensive 'index.html' file that contains all CSS inside style tags and JavaScript inside script tags. DO NOT split it into multiple files (HTML, CSS, JS).
 - If a task is highly complex, involves a file upload, deep research, coding from scratch, or multi-step execution, you MUST use the **Enterprise Swarm Protocol**.
   DO NOT do it yourself. Instead, delegate to your autonomous team. 
   CRITICAL RULE: You can only call ONE subagent per response. You must STOP generating after the [/SUBAGENT] tag and wait for the system to reply with the subagent's output.
