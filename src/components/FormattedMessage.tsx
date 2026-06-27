@@ -140,10 +140,10 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
     let lang = '';
     let codeStr = '';
     
-    const lines = text.split('\\n');
+    const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.startsWith('\`\`\`')) {
+      if (line.startsWith('```')) {
         if (inCode) {
           p.push({ type: 'code', language: lang, content: codeStr.trim() });
           inCode = false;
@@ -156,9 +156,9 @@ export function FormattedMessage({ content }: FormattedMessageProps) {
           lang = line.slice(3).trim();
         }
       } else if (inCode) {
-        codeStr += line + '\\n';
+        codeStr += line + '\n';
       } else {
-        curr += line + '\\n';
+        curr += line + '\n';
       }
     }
     if (curr) p.push({ type: 'text', content: curr });
